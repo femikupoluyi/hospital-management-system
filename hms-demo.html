@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMS - Live Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .demo-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+        }
+        .demo-title {
+            font-size: 1.2rem;
+            color: #4a5568;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            margin: 5px 0;
+        }
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        .status.pending {
+            background: #feebc8;
+            color: #744210;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .result-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #e2e8f0;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+        .feature-card h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        .feature-status {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Hospital Management System - Feature Demo</h1>
+        
+        <div class="demo-section">
+            <div class="demo-title">System Status</div>
+            <div id="systemStatus" class="result-box">
+                <div class="loading"></div> Checking system...
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">Quick Feature Test</div>
+            <button class="btn" onclick="runFullDemo()">Run Complete Demo</button>
+            <button class="btn" onclick="checkBackendHealth()">Check Backend Health</button>
+            <button class="btn" onclick="testAuthentication()">Test Authentication</button>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">Feature Status Dashboard</div>
+            <div class="feature-grid" id="featureGrid">
+                <!-- Features will be populated here -->
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">Test Results</div>
+            <div id="testResults" class="result-box">
+                Click "Run Complete Demo" to test all features
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">Access Information</div>
+            <div class="result-box">
+                <p><strong>Backend API:</strong> http://localhost:4000/api</p>
+                <p><strong>Frontend:</strong> http://localhost:4001</p>
+                <p><strong>GitHub:</strong> <a href="https://github.com/femikupoluyi/hospital-management-platform" target="_blank">Repository</a></p>
+                <p><strong>Test Credentials:</strong></p>
+                <ul>
+                    <li>Admin: admin@hospital.com / password123</li>
+                    <li>Doctor: dr.smith@hospital.com / password123</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:4000/api';
+        let authToken = '';
+
+        const features = [
+            { name: 'Authentication', icon: '🔐', status: 'pending' },
+            { name: 'Patient Management', icon: '👥', status: 'pending' },
+            { name: 'Medical Records', icon: '📋', status: 'pending' },
+            { name: 'Billing & Invoicing', icon: '💰', status: 'pending' },
+            { name: 'Inventory Management', icon: '📦', status: 'pending' },
+            { name: 'Staff Scheduling', icon: '📅', status: 'pending' },
+            { name: 'Bed Management', icon: '🛏️', status: 'pending' },
+            { name: 'Appointments', icon: '📆', status: 'pending' },
+            { name: 'Lab Results', icon: '🔬', status: 'pending' },
+            { name: 'Prescriptions', icon: '💊', status: 'pending' },
+            { name: 'Analytics Dashboard', icon: '📊', status: 'pending' },
+            { name: 'Report Generation', icon: '📄', status: 'pending' }
+        ];
+
+        function initFeatureGrid() {
+            const grid = document.getElementById('featureGrid');
+            grid.innerHTML = features.map(feature => `
+                <div class="feature-card">
+                    <h3>
+                        <span class="feature-status">${feature.icon}</span>
+                        ${feature.name}
+                    </h3>
+                    <span class="status ${feature.status}" id="feature-${feature.name.replace(/\s+/g, '-')}">
+                        ${feature.status === 'success' ? '✅ Working' : 
+                          feature.status === 'error' ? '❌ Failed' : 
+                          '⏳ Pending'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        async function checkBackendHealth() {
+            const statusDiv = document.getElementById('systemStatus');
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.innerHTML = `
+                        <span class="status success">✅ Backend Online</span>
+                        <p>Service: ${data.service}</p>
+                        <p>Version: ${data.version}</p>
+                        <p>Status: ${data.status}</p>
+                    `;
+                } else {
+                    statusDiv.innerHTML = '<span class="status error">❌ Backend Offline</span>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<span class="status error">❌ Cannot connect to backend: ${error.message}</span>`;
+            }
+        }
+
+        async function testAuthentication() {
+            updateFeatureStatus('Authentication', 'testing');
+            try {
+                // First seed the data
+                await fetch(`${API_URL}/system/seed`, { method: 'POST' });
+                
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@hospital.com',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    updateFeatureStatus('Authentication', 'success');
+                    addResult('✅ Authentication successful');
+                    return true;
+                } else {
+                    updateFeatureStatus('Authentication', 'error');
+                    addResult('❌ Authentication failed');
+                    return false;
+                }
+            } catch (error) {
+                updateFeatureStatus('Authentication', 'error');
+                addResult(`❌ Authentication error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function runFullDemo() {
+            document.getElementById('testResults').innerHTML = '<div class="loading"></div> Running tests...';
+            
+            // Test authentication first
+            const authSuccess = await testAuthentication();
+            if (!authSuccess) {
+                addResult('⚠️ Cannot proceed without authentication');
+                return;
+            }
+            
+            const config = { headers: { 'Authorization': `Bearer ${authToken}` } };
+            
+            // Test Patient Management
+            try {
+                updateFeatureStatus('Patient-Management', 'testing');
+                const patient = await fetch(`${API_URL}/patients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        first_name: 'Test',
+                        last_name: 'Patient',
+                        date_of_birth: '1990-01-01',
+                        gender: 'Male',
+                        phone: '555-1234',
+                        email: 'test@patient.com'
+                    })
+                });
+                
+                if (patient.ok) {
+                    updateFeatureStatus('Patient-Management', 'success');
+                    addResult('✅ Patient Management working');
+                    
+                    const patientData = await patient.json();
+                    const patientId = patientData.patient.id;
+                    
+                    // Test Medical Records
+                    updateFeatureStatus('Medical-Records', 'testing');
+                    const record = await fetch(`${API_URL}/medical-records`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            patient_id: patientId,
+                            doctor_id: 1,
+                            chief_complaint: 'Test complaint',
+                            diagnosis: 'Test diagnosis',
+                            treatment_plan: 'Test treatment'
+                        })
+                    });
+                    
+                    if (record.ok) {
+                        updateFeatureStatus('Medical-Records', 'success');
+                        addResult('✅ Medical Records working');
+                    }
+                }
+            } catch (error) {
+                addResult(`❌ Error testing features: ${error.message}`);
+            }
+            
+            // Test other features
+            const featuresToTest = [
+                { name: 'Billing-&-Invoicing', endpoint: '/invoices', method: 'GET' },
+                { name: 'Inventory-Management', endpoint: '/inventory', method: 'GET' },
+                { name: 'Staff-Scheduling', endpoint: '/staff-schedules', method: 'GET' },
+                { name: 'Bed-Management', endpoint: '/beds', method: 'GET' },
+                { name: 'Analytics-Dashboard', endpoint: '/analytics/dashboard', method: 'GET' }
+            ];
+            
+            for (const feature of featuresToTest) {
+                try {
+                    updateFeatureStatus(feature.name, 'testing');
+                    const response = await fetch(`${API_URL}${feature.endpoint}`, {
+                        method: feature.method,
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    
+                    if (response.ok) {
+                        updateFeatureStatus(feature.name, 'success');
+                        addResult(`✅ ${feature.name.replace(/-/g, ' ')} working`);
+                    } else {
+                        updateFeatureStatus(feature.name, 'error');
+                        addResult(`❌ ${feature.name.replace(/-/g, ' ')} failed`);
+                    }
+                } catch (error) {
+                    updateFeatureStatus(feature.name, 'error');
+                    addResult(`❌ ${feature.name.replace(/-/g, ' ')} error: ${error.message}`);
+                }
+            }
+            
+            addResult('\n🎉 Demo Complete! Check the feature grid above for status.');
+        }
+
+        function updateFeatureStatus(featureName, status) {
+            const element = document.getElementById(`feature-${featureName}`);
+            if (element) {
+                element.className = `status ${status}`;
+                element.textContent = status === 'success' ? '✅ Working' : 
+                                     status === 'error' ? '❌ Failed' : 
+                                     status === 'testing' ? '⏳ Testing...' : 
+                                     '⏳ Pending';
+            }
+        }
+
+        function addResult(message) {
+            const resultsDiv = document.getElementById('testResults');
+            if (resultsDiv.innerHTML.includes('loading')) {
+                resultsDiv.innerHTML = '';
+            }
+            resultsDiv.innerHTML += `<p>${message}</p>`;
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            initFeatureGrid();
+            checkBackendHealth();
+        };
+    </script>
+</body>
+</html>
