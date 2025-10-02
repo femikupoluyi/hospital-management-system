@@ -9,7 +9,7 @@ app.use(express.static('.'));
 
 // Main route
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'hms-frontend-fixed.html'));
+    res.sendFile(path.join(__dirname, 'hms-final-working.html'));
 });
 
 app.listen(PORT, () => {
