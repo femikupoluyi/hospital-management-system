@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .auth-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .auth-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .module-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .module-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 24px;
+        }
+
+        .module-title {
+            color: #2d3748;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .module-description {
+            color: #718096;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .module-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #edf2f7;
+        }
+
+        .btn-danger {
+            background: #fc8181;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: #2d3748;
+        }
+
+        .close {
+            color: #a0aec0;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #4a5568;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th {
+            background: #f7fafc;
+            padding: 12px;
+            text-align: left;
+            color: #4a5568;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+        }
+
+        .data-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .alert-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tab-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .badge-warning {
+            background: #feebc8;
+            color: #744210;
+        }
+
+        .badge-danger {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .badge-info {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Hospital Management System</h1>
+            <p>Comprehensive Healthcare Management Platform</p>
+        </div>
+
+        <div class="auth-section">
+            <div class="auth-info">
+                <span id="authStatus">Not logged in</span>
+            </div>
+            <div class="auth-buttons">
+                <button class="btn btn-primary" onclick="showLoginModal()">Login</button>
+                <button class="btn btn-secondary" onclick="showRegisterModal()">Register</button>
+                <button class="btn btn-danger" onclick="logout()" style="display:none" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div class="modules-grid">
+            <!-- Electronic Medical Records Module -->
+            <div class="module-card">
+                <div class="module-header">
+                    <div class="module-icon">📋</div>
+                    <div class="module-title">Electronic Medical Records</div>
+                </div>
+                <div class="module-description">
+                    Complete patient medical history, diagnoses, prescriptions, and lab results management.
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" onclick="showNewRecordModal()">New Record</button>
+                    <button class="btn btn-secondary" onclick="showViewRecordsModal()">View Records</button>
+                </div>
+            </div>
+
+            <!-- Billing & Revenue Module -->
+            <div class="module-card">
+                <div class="module-header">
+                    <div class="module-icon">💰</div>
+                    <div class="module-title">Billing & Revenue</div>
+                </div>
+                <div class="module-description">
+                    Invoice generation, payment processing, insurance claims, and revenue tracking.
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" onclick="showCreateInvoiceModal()">Create Invoice</button>
+                    <button class="btn btn-secondary" onclick="showViewInvoicesModal()">View Invoices</button>
+                </div>
+            </div>
+
+            <!-- Inventory Management Module -->
+            <div class="module-card">
+                <div class="module-header">
+                    <div class="module-icon">📦</div>
+                    <div class="module-title">Inventory Management</div>
+                </div>
+                <div class="module-description">
+                    Track medications, medical supplies, equipment with automatic reorder alerts.
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" onclick="showStockEntryModal()">Stock Entry</button>
+                    <button class="btn btn-secondary" onclick="showLowStockAlert()">Low Stock Alert</button>
+                </div>
+            </div>
+
+            <!-- Staff Management Module -->
+            <div class="module-card">
+                <div class="module-header">
+                    <div class="module-icon">👥</div>
+                    <div class="module-title">Staff Management</div>
+                </div>
+                <div class="module-description">
+                    Staff scheduling, attendance tracking, payroll processing, and performance metrics.
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" onclick="showAddScheduleModal()">Add Schedule</button>
+                    <button class="btn btn-secondary" onclick="showViewRosterModal()">View Roster</button>
+                </div>
+            </div>
+
+            <!-- Bed Management Module -->
+            <div class="module-card">
+                <div class="module-header">
+                    <div class="module-icon">🛏️</div>
+                    <div class="module-title">Bed Management</div>
+                </div>
+                <div class="module-description">
+                    Real-time bed availability, admissions, discharges, and ward occupancy tracking.
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" onclick="showNewAdmissionModal()">New Admission</button>
+                    <button class="btn btn-secondary" onclick="showAvailableBedsModal()">Available Beds</button>
+                </div>
+            </div>
+
+            <!-- Analytics Dashboard Module -->
+            <div class="module-card">
+                <div class="module-header">
+                    <div class="module-icon">📊</div>
+                    <div class="module-title">Analytics Dashboard</div>
+                </div>
+                <div class="module-description">
+                    Real-time metrics, occupancy trends, revenue analytics, and performance KPIs.
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" onclick="showDashboard()">View Dashboard</button>
+                    <button class="btn btn-secondary" onclick="exportReport()">Export Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Login</h2>
+                <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            </div>
+            <form onsubmit="login(event)">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-control" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Register</h2>
+                <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            </div>
+            <form onsubmit="register(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-control" id="registerUsername" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-control" id="registerPassword" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <select class="form-control" id="registerRole" required>
+                        <option value="doctor">Doctor</option>
+                        <option value="nurse">Nurse</option>
+                        <option value="admin">Admin</option>
+                        <option value="technician">Technician</option>
+                        <option value="receptionist">Receptionist</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Department</label>
+                    <input type="text" class="form-control" id="registerDepartment">
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- New Record Modal -->
+    <div id="newRecordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">New Medical Record</h2>
+                <span class="close" onclick="closeModal('newRecordModal')">&times;</span>
+            </div>
+            <form onsubmit="createMedicalRecord(event)">
+                <div class="form-group">
+                    <label class="form-label">Patient</label>
+                    <select class="form-control" id="recordPatientId" required>
+                        <option value="">Select Patient</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Chief Complaint</label>
+                    <textarea class="form-control" id="chiefComplaint" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Diagnosis</label>
+                    <textarea class="form-control" id="diagnosis" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Treatment Plan</label>
+                    <textarea class="form-control" id="treatmentPlan" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control" id="recordNotes"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Record</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Records Modal -->
+    <div id="viewRecordsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Medical Records</h2>
+                <span class="close" onclick="closeModal('viewRecordsModal')">&times;</span>
+            </div>
+            <div id="recordsList"></div>
+        </div>
+    </div>
+
+    <!-- Create Invoice Modal -->
+    <div id="createInvoiceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Invoice</h2>
+                <span class="close" onclick="closeModal('createInvoiceModal')">&times;</span>
+            </div>
+            <form onsubmit="createInvoice(event)">
+                <div class="form-group">
+                    <label class="form-label">Patient</label>
+                    <select class="form-control" id="invoicePatientId" required>
+                        <option value="">Select Patient</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Service Description</label>
+                    <input type="text" class="form-control" id="serviceDescription" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Amount</label>
+                    <input type="number" class="form-control" id="invoiceAmount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Payment Method</label>
+                    <select class="form-control" id="paymentMethod">
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="nhis">NHIS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Due Date</label>
+                    <input type="date" class="form-control" id="dueDate" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Invoice</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Invoices Modal -->
+    <div id="viewInvoicesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Invoices</h2>
+                <span class="close" onclick="closeModal('viewInvoicesModal')">&times;</span>
+            </div>
+            <div id="invoicesList"></div>
+        </div>
+    </div>
+
+    <!-- Stock Entry Modal -->
+    <div id="stockEntryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Stock Entry</h2>
+                <span class="close" onclick="closeModal('stockEntryModal')">&times;</span>
+            </div>
+            <form onsubmit="addInventoryItem(event)">
+                <div class="form-group">
+                    <label class="form-label">Item Code</label>
+                    <input type="text" class="form-control" id="itemCode" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Item Name</label>
+                    <input type="text" class="form-control" id="itemName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-control" id="itemCategory" required>
+                        <option value="Medicine">Medicine</option>
+                        <option value="Supplies">Supplies</option>
+                        <option value="Equipment">Equipment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" class="form-control" id="itemQuantity" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit</label>
+                    <input type="text" class="form-control" id="itemUnit" placeholder="e.g., Box, Unit, Bottle">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reorder Level</label>
+                    <input type="number" class="form-control" id="reorderLevel" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit Price</label>
+                    <input type="number" class="form-control" id="unitPrice" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Supplier</label>
+                    <input type="text" class="form-control" id="supplier">
+                </div>
+                <button type="submit" class="btn btn-primary">Add Item</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Low Stock Alert Modal -->
+    <div id="lowStockModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Low Stock Alerts</h2>
+                <span class="close" onclick="closeModal('lowStockModal')">&times;</span>
+            </div>
+            <div id="lowStockList"></div>
+        </div>
+    </div>
+
+    <!-- Add Schedule Modal -->
+    <div id="addScheduleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Staff Schedule</h2>
+                <span class="close" onclick="closeModal('addScheduleModal')">&times;</span>
+            </div>
+            <form onsubmit="addSchedule(event)">
+                <div class="form-group">
+                    <label class="form-label">Staff Member</label>
+                    <select class="form-control" id="staffId" required>
+                        <option value="">Select Staff</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-control" id="scheduleDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Shift</label>
+                    <select class="form-control" id="shift" required>
+                        <option value="morning">Morning (6 AM - 2 PM)</option>
+                        <option value="afternoon">Afternoon (2 PM - 10 PM)</option>
+                        <option value="night">Night (10 PM - 6 AM)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Department</label>
+                    <input type="text" class="form-control" id="scheduleDepartment" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Schedule</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Roster Modal -->
+    <div id="viewRosterModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Staff Roster</h2>
+                <span class="close" onclick="closeModal('viewRosterModal')">&times;</span>
+            </div>
+            <div id="rosterList"></div>
+        </div>
+    </div>
+
+    <!-- New Admission Modal -->
+    <div id="newAdmissionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">New Admission</h2>
+                <span class="close" onclick="closeModal('newAdmissionModal')">&times;</span>
+            </div>
+            <form onsubmit="admitPatient(event)">
+                <div class="form-group">
+                    <label class="form-label">Patient</label>
+                    <select class="form-control" id="admissionPatientId" required>
+                        <option value="">Select Patient</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Bed</label>
+                    <select class="form-control" id="bedId" required>
+                        <option value="">Select Available Bed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Expected Discharge Date</label>
+                    <input type="date" class="form-control" id="expectedDischarge">
+                </div>
+                <button type="submit" class="btn btn-primary">Admit Patient</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Available Beds Modal -->
+    <div id="availableBedsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Available Beds</h2>
+                <span class="close" onclick="closeModal('availableBedsModal')">&times;</span>
+            </div>
+            <div id="bedsList"></div>
+        </div>
+    </div>
+
+    <!-- Dashboard Modal -->
+    <div id="dashboardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Analytics Dashboard</h2>
+                <span class="close" onclick="closeModal('dashboardModal')">&times;</span>
+            </div>
+            <div id="dashboardContent">
+                <div class="stats-grid" id="statsGrid"></div>
+                <div class="tab-container">
+                    <div class="tab-buttons">
+                        <button class="tab-button active" onclick="showTab('revenue')">Revenue</button>
+                        <button class="tab-button" onclick="showTab('occupancy')">Occupancy</button>
+                        <button class="tab-button" onclick="showTab('appointments')">Appointments</button>
+                    </div>
+                    <div id="revenue" class="tab-content active"></div>
+                    <div id="occupancy" class="tab-content"></div>
+                    <div id="appointments" class="tab-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_URL = 'http://localhost:4000/api';
+        let authToken = localStorage.getItem('hms_token');
+        let currentUser = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            seedInitialData();
+        });
+
+        // Authentication Functions
+        function showLoginModal() {
+            document.getElementById('loginModal').style.display = 'block';
+        }
+
+        function showRegisterModal() {
+            document.getElementById('registerModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        async function login(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('hms_token', authToken);
+                    checkAuth();
+                    closeModal('loginModal');
+                    showAlert('Login successful!', 'success');
+                } else {
+                    showAlert(data.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showAlert('Login failed: ' + error.message, 'error');
+            }
+        }
+
+        async function register(event) {
+            event.preventDefault();
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const role = document.getElementById('registerRole').value;
+            const department = document.getElementById('registerDepartment').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password, role, department })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('hms_token', authToken);
+                    checkAuth();
+                    closeModal('registerModal');
+                    showAlert('Registration successful!', 'success');
+                } else {
+                    showAlert(data.error || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showAlert('Registration failed: ' + error.message, 'error');
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('hms_token');
+            checkAuth();
+            showAlert('Logged out successfully', 'success');
+        }
+
+        function checkAuth() {
+            if (authToken) {
+                document.getElementById('authStatus').textContent = `Logged in as: ${currentUser?.email || 'User'}`;
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+                document.querySelector('.auth-buttons button:nth-child(1)').style.display = 'none';
+                document.querySelector('.auth-buttons button:nth-child(2)').style.display = 'none';
+            } else {
+                document.getElementById('authStatus').textContent = 'Not logged in';
+                document.getElementById('logoutBtn').style.display = 'none';
+                document.querySelector('.auth-buttons button:nth-child(1)').style.display = 'inline-block';
+                document.querySelector('.auth-buttons button:nth-child(2)').style.display = 'inline-block';
+            }
+        }
+
+        // Alert Functions
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertDiv.style.display = 'block';
+            
+            const container = document.getElementById('alertContainer');
+            container.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Medical Records Functions
+        async function showNewRecordModal() {
+            await loadPatients('recordPatientId');
+            document.getElementById('newRecordModal').style.display = 'block';
+        }
+
+        async function createMedicalRecord(event) {
+            event.preventDefault();
+            
+            const data = {
+                patient_id: document.getElementById('recordPatientId').value,
+                doctor_id: currentUser?.id || 1,
+                chief_complaint: document.getElementById('chiefComplaint').value,
+                diagnosis: document.getElementById('diagnosis').value,
+                treatment_plan: document.getElementById('treatmentPlan').value,
+                notes: document.getElementById('recordNotes').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/medical-records`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('Medical record created successfully!', 'success');
+                    closeModal('newRecordModal');
+                    event.target.reset();
+                } else {
+                    showAlert(result.error || 'Failed to create record', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function showViewRecordsModal() {
+            document.getElementById('viewRecordsModal').style.display = 'block';
+            await loadMedicalRecords();
+        }
+
+        async function loadMedicalRecords() {
+            try {
+                const response = await fetch(`${API_URL}/patients`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success && data.patients.length > 0) {
+                    let html = '<table class="data-table"><thead><tr>';
+                    html += '<th>Patient ID</th><th>Name</th><th>Date of Birth</th><th>Actions</th>';
+                    html += '</tr></thead><tbody>';
+                    
+                    data.patients.forEach(patient => {
+                        html += `<tr>
+                            <td>${patient.patient_id}</td>
+                            <td>${patient.first_name} ${patient.last_name}</td>
+                            <td>${new Date(patient.date_of_birth).toLocaleDateString()}</td>
+                            <td><button class="btn btn-secondary" onclick="viewPatientRecords(${patient.id})">View Records</button></td>
+                        </tr>`;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('recordsList').innerHTML = html;
+                } else {
+                    document.getElementById('recordsList').innerHTML = '<p>No patients found</p>';
+                }
+            } catch (error) {
+                document.getElementById('recordsList').innerHTML = '<p>Error loading records</p>';
+            }
+        }
+
+        // Billing Functions
+        async function showCreateInvoiceModal() {
+            await loadPatients('invoicePatientId');
+            document.getElementById('createInvoiceModal').style.display = 'block';
+        }
+
+        async function createInvoice(event) {
+            event.preventDefault();
+            
+            const data = {
+                patient_id: document.getElementById('invoicePatientId').value,
+                items: [{
+                    description: document.getElementById('serviceDescription').value,
+                    amount: parseFloat(document.getElementById('invoiceAmount').value)
+                }],
+                total_amount: parseFloat(document.getElementById('invoiceAmount').value),
+                payment_method: document.getElementById('paymentMethod').value,
+                due_date: document.getElementById('dueDate').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/invoices`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('Invoice created successfully!', 'success');
+                    closeModal('createInvoiceModal');
+                    event.target.reset();
+                } else {
+                    showAlert(result.error || 'Failed to create invoice', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function showViewInvoicesModal() {
+            document.getElementById('viewInvoicesModal').style.display = 'block';
+            await loadInvoices();
+        }
+
+        async function loadInvoices() {
+            try {
+                const response = await fetch(`${API_URL}/invoices`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success && data.invoices.length > 0) {
+                    let html = '<table class="data-table"><thead><tr>';
+                    html += '<th>Invoice #</th><th>Patient</th><th>Amount</th><th>Status</th><th>Actions</th>';
+                    html += '</tr></thead><tbody>';
+                    
+                    data.invoices.forEach(invoice => {
+                        const statusBadge = invoice.status === 'paid' ? 'badge-success' : 
+                                          invoice.status === 'partial' ? 'badge-warning' : 'badge-danger';
+                        html += `<tr>
+                            <td>${invoice.invoice_number}</td>
+                            <td>${invoice.first_name} ${invoice.last_name}</td>
+                            <td>$${invoice.total_amount}</td>
+                            <td><span class="badge ${statusBadge}">${invoice.status}</span></td>
+                            <td>
+                                <button class="btn btn-secondary" onclick="downloadInvoice(${invoice.id})">Download PDF</button>
+                            </td>
+                        </tr>`;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('invoicesList').innerHTML = html;
+                } else {
+                    document.getElementById('invoicesList').innerHTML = '<p>No invoices found</p>';
+                }
+            } catch (error) {
+                document.getElementById('invoicesList').innerHTML = '<p>Error loading invoices</p>';
+            }
+        }
+
+        // Inventory Functions
+        async function showStockEntryModal() {
+            document.getElementById('stockEntryModal').style.display = 'block';
+        }
+
+        async function addInventoryItem(event) {
+            event.preventDefault();
+            
+            const data = {
+                item_code: document.getElementById('itemCode').value,
+                item_name: document.getElementById('itemName').value,
+                category: document.getElementById('itemCategory').value,
+                unit: document.getElementById('itemUnit').value,
+                quantity: parseInt(document.getElementById('itemQuantity').value),
+                reorder_level: parseInt(document.getElementById('reorderLevel').value),
+                unit_price: parseFloat(document.getElementById('unitPrice').value),
+                supplier: document.getElementById('supplier').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/inventory`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('Inventory item added successfully!', 'success');
+                    closeModal('stockEntryModal');
+                    event.target.reset();
+                } else {
+                    showAlert(result.error || 'Failed to add item', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function showLowStockAlert() {
+            document.getElementById('lowStockModal').style.display = 'block';
+            await loadLowStockItems();
+        }
+
+        async function loadLowStockItems() {
+            try {
+                const response = await fetch(`${API_URL}/inventory/low-stock`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success && data.items.length > 0) {
+                    let html = '<table class="data-table"><thead><tr>';
+                    html += '<th>Item Code</th><th>Item Name</th><th>Current Stock</th><th>Reorder Level</th><th>Action</th>';
+                    html += '</tr></thead><tbody>';
+                    
+                    data.items.forEach(item => {
+                        html += `<tr>
+                            <td>${item.item_code}</td>
+                            <td>${item.item_name}</td>
+                            <td><span class="badge badge-danger">${item.quantity}</span></td>
+                            <td>${item.reorder_level}</td>
+                            <td><button class="btn btn-primary" onclick="reorderItem(${item.id})">Reorder</button></td>
+                        </tr>`;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('lowStockList').innerHTML = html;
+                } else {
+                    document.getElementById('lowStockList').innerHTML = '<p>All items are well stocked!</p>';
+                }
+            } catch (error) {
+                document.getElementById('lowStockList').innerHTML = '<p>Error loading low stock items</p>';
+            }
+        }
+
+        // Staff Management Functions
+        async function showAddScheduleModal() {
+            await loadStaff('staffId');
+            document.getElementById('addScheduleModal').style.display = 'block';
+        }
+
+        async function addSchedule(event) {
+            event.preventDefault();
+            
+            const shift = document.getElementById('shift').value;
+            const shiftTimes = {
+                morning: { start: '06:00', end: '14:00' },
+                afternoon: { start: '14:00', end: '22:00' },
+                night: { start: '22:00', end: '06:00' }
+            };
+            
+            const data = {
+                staff_id: document.getElementById('staffId').value,
+                date: document.getElementById('scheduleDate').value,
+                shift: shift,
+                start_time: shiftTimes[shift].start,
+                end_time: shiftTimes[shift].end,
+                department: document.getElementById('scheduleDepartment').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/staff-schedules`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('Schedule added successfully!', 'success');
+                    closeModal('addScheduleModal');
+                    event.target.reset();
+                } else {
+                    showAlert(result.error || 'Failed to add schedule', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function showViewRosterModal() {
+            document.getElementById('viewRosterModal').style.display = 'block';
+            await loadRoster();
+        }
+
+        async function loadRoster() {
+            try {
+                const response = await fetch(`${API_URL}/staff-roster`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success && data.roster.length > 0) {
+                    let html = '<table class="data-table"><thead><tr>';
+                    html += '<th>Date</th><th>Staff</th><th>Department</th><th>Shift</th><th>Time</th>';
+                    html += '</tr></thead><tbody>';
+                    
+                    data.roster.forEach(schedule => {
+                        html += `<tr>
+                            <td>${new Date(schedule.date).toLocaleDateString()}</td>
+                            <td>${schedule.username}</td>
+                            <td>${schedule.department}</td>
+                            <td><span class="badge badge-info">${schedule.shift}</span></td>
+                            <td>${schedule.start_time} - ${schedule.end_time}</td>
+                        </tr>`;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('rosterList').innerHTML = html;
+                } else {
+                    document.getElementById('rosterList').innerHTML = '<p>No schedules found</p>';
+                }
+            } catch (error) {
+                document.getElementById('rosterList').innerHTML = '<p>Error loading roster</p>';
+            }
+        }
+
+        // Bed Management Functions
+        async function showNewAdmissionModal() {
+            await loadPatients('admissionPatientId');
+            await loadAvailableBeds('bedId');
+            document.getElementById('newAdmissionModal').style.display = 'block';
+        }
+
+        async function admitPatient(event) {
+            event.preventDefault();
+            
+            const data = {
+                bed_id: document.getElementById('bedId').value,
+                patient_id: document.getElementById('admissionPatientId').value,
+                expected_discharge: document.getElementById('expectedDischarge').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/beds/admit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('Patient admitted successfully!', 'success');
+                    closeModal('newAdmissionModal');
+                    event.target.reset();
+                } else {
+                    showAlert(result.error || 'Failed to admit patient', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function showAvailableBedsModal() {
+            document.getElementById('availableBedsModal').style.display = 'block';
+            await loadBeds();
+        }
+
+        async function loadBeds() {
+            try {
+                const response = await fetch(`${API_URL}/beds`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success && data.beds.length > 0) {
+                    let html = '<table class="data-table"><thead><tr>';
+                    html += '<th>Bed Number</th><th>Ward</th><th>Status</th><th>Patient</th><th>Action</th>';
+                    html += '</tr></thead><tbody>';
+                    
+                    data.beds.forEach(bed => {
+                        const statusBadge = bed.status === 'available' ? 'badge-success' : 'badge-danger';
+                        html += `<tr>
+                            <td>${bed.bed_number}</td>
+                            <td>${bed.ward}</td>
+                            <td><span class="badge ${statusBadge}">${bed.status}</span></td>
+                            <td>${bed.patient_id ? `${bed.first_name} ${bed.last_name}` : '-'}</td>
+                            <td>`;
+                        if (bed.status === 'occupied') {
+                            html += `<button class="btn btn-secondary" onclick="dischargeBed(${bed.id})">Discharge</button>`;
+                        }
+                        html += `</td></tr>`;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('bedsList').innerHTML = html;
+                } else {
+                    document.getElementById('bedsList').innerHTML = '<p>No beds found</p>';
+                }
+            } catch (error) {
+                document.getElementById('bedsList').innerHTML = '<p>Error loading beds</p>';
+            }
+        }
+
+        async function dischargeBed(bedId) {
+            if (confirm('Are you sure you want to discharge this patient?')) {
+                try {
+                    const response = await fetch(`${API_URL}/beds/${bedId}/discharge`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        showAlert('Patient discharged successfully!', 'success');
+                        loadBeds();
+                    } else {
+                        showAlert(result.error || 'Failed to discharge patient', 'error');
+                    }
+                } catch (error) {
+                    showAlert('Error: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Analytics Functions
+        async function showDashboard() {
+            document.getElementById('dashboardModal').style.display = 'block';
+            await loadDashboardStats();
+        }
+
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch(`${API_URL}/analytics/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.stats;
+                    let html = '';
+                    
+                    html += `<div class="stat-card">
+                        <div class="stat-value">${stats.totalPatients || 0}</div>
+                        <div class="stat-label">Total Patients</div>
+                    </div>`;
+                    
+                    html += `<div class="stat-card">
+                        <div class="stat-value">${stats.appointmentsToday || 0}</div>
+                        <div class="stat-label">Appointments Today</div>
+                    </div>`;
+                    
+                    html += `<div class="stat-card">
+                        <div class="stat-value">${stats.staffOnDuty || 0}</div>
+                        <div class="stat-label">Staff on Duty</div>
+                    </div>`;
+                    
+                    html += `<div class="stat-card">
+                        <div class="stat-value">${stats.lowStockItems || 0}</div>
+                        <div class="stat-label">Low Stock Items</div>
+                    </div>`;
+                    
+                    document.getElementById('statsGrid').innerHTML = html;
+                    
+                    // Load revenue data
+                    loadRevenueData();
+                    loadOccupancyData();
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function loadRevenueData() {
+            try {
+                const response = await fetch(`${API_URL}/analytics/revenue`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    let html = '<h3>Revenue Overview</h3>';
+                    html += '<table class="data-table"><thead><tr>';
+                    html += '<th>Date</th><th>Invoices</th><th>Total Amount</th><th>Collected</th>';
+                    html += '</tr></thead><tbody>';
+                    
+                    data.data.forEach(item => {
+                        html += `<tr>
+                            <td>${new Date(item.date).toLocaleDateString()}</td>
+                            <td>${item.invoice_count}</td>
+                            <td>$${parseFloat(item.total_amount || 0).toFixed(2)}</td>
+                            <td>$${parseFloat(item.paid_amount || 0).toFixed(2)}</td>
+                        </tr>`;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('revenue').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('revenue').innerHTML = '<p>Error loading revenue data</p>';
+            }
+        }
+
+        async function loadOccupancyData() {
+            try {
+                const response = await fetch(`${API_URL}/analytics/occupancy`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    let html = '<h3>Bed Occupancy by Ward</h3>';
+                    html += '<table class="data-table"><thead><tr>';
+                    html += '<th>Ward</th><th>Total Beds</th><th>Occupied</th><th>Occupancy Rate</th>';
+                    html += '</tr></thead><tbody>';
+                    
+                    data.data.forEach(ward => {
+                        const rateClass = ward.occupancy_rate > 80 ? 'badge-danger' : 
+                                        ward.occupancy_rate > 60 ? 'badge-warning' : 'badge-success';
+                        html += `<tr>
+                            <td>${ward.ward}</td>
+                            <td>${ward.total_beds}</td>
+                            <td>${ward.occupied_beds}</td>
+                            <td><span class="badge ${rateClass}">${ward.occupancy_rate}%</span></td>
+                        </tr>`;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('occupancy').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('occupancy').innerHTML = '<p>Error loading occupancy data</p>';
+            }
+        }
+
+        async function exportReport() {
+            try {
+                const response = await fetch(`${API_URL}/analytics/export`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        type: 'revenue',
+                        start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        end_date: new Date().toISOString().split('T')[0]
+                    })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'analytics-report.pdf';
+                    a.click();
+                    showAlert('Report exported successfully!', 'success');
+                } else {
+                    showAlert('Failed to export report', 'error');
+                }
+            } catch (error) {
+                showAlert('Error exporting report: ' + error.message, 'error');
+            }
+        }
+
+        // Helper Functions
+        async function loadPatients(selectId) {
+            try {
+                const response = await fetch(`${API_URL}/patients`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Select Patient</option>';
+                
+                if (data.success && data.patients) {
+                    data.patients.forEach(patient => {
+                        const option = document.createElement('option');
+                        option.value = patient.id;
+                        option.textContent = `${patient.first_name} ${patient.last_name} (${patient.patient_id})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading patients:', error);
+            }
+        }
+
+        async function loadStaff(selectId) {
+            try {
+                // For now, we'll create some dummy staff options
+                const select = document.getElementById(selectId);
+                select.innerHTML = `
+                    <option value="">Select Staff</option>
+                    <option value="1">Dr. Smith (Cardiology)</option>
+                    <option value="2">Nurse Jane (Emergency)</option>
+                    <option value="3">Tech John (Laboratory)</option>
+                `;
+            } catch (error) {
+                console.error('Error loading staff:', error);
+            }
+        }
+
+        async function loadAvailableBeds(selectId) {
+            try {
+                const response = await fetch(`${API_URL}/beds/available`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Select Available Bed</option>';
+                
+                if (data.success && data.beds) {
+                    data.beds.forEach(bed => {
+                        const option = document.createElement('option');
+                        option.value = bed.id;
+                        option.textContent = `Bed ${bed.bed_number} - ${bed.ward}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading beds:', error);
+            }
+        }
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function downloadInvoice(invoiceId) {
+            try {
+                const response = await fetch(`${API_URL}/invoices/${invoiceId}/pdf`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `invoice-${invoiceId}.pdf`;
+                    a.click();
+                    showAlert('Invoice downloaded successfully!', 'success');
+                } else {
+                    showAlert('Failed to download invoice', 'error');
+                }
+            } catch (error) {
+                showAlert('Error downloading invoice: ' + error.message, 'error');
+            }
+        }
+
+        async function seedInitialData() {
+            try {
+                const response = await fetch(`${API_URL}/system/seed`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    console.log('Initial data seeded');
+                }
+            } catch (error) {
+                console.error('Seed data error:', error);
+            }
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
