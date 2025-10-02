@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🏥 Hospital Management System
 
 A comprehensive, production-ready Hospital Management System with full-stack implementation including Electronic Medical Records, Billing, Inventory, Staff Management, Bed Management, and Analytics.
@@ -348,3 +349,7 @@ The system receives regular updates with:
 ---
 
 **Built with ❤️ for Healthcare**
+=======
+# hospital-management-system
+Comprehensive Hospital Management System with Electronic Medical Records, Billing, Inventory, Staff Management, Bed Management, and Analytics
+>>>>>>> 27da96bfe8ae52c288f628f468217d1bb6cd8821
