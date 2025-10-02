@@ -1,0 +1,122 @@
+{
+  "timestamp": "2025-10-02T04:10:54.247Z",
+  "environment": "production",
+  "urls": {
+    "frontend": "https://hms-frontend-final-morphvm-mkofwuzh.http.cloud.morph.so",
+    "backend": "https://hms-backend-final-morphvm-mkofwuzh.http.cloud.morph.so/api",
+    "partner": "https://partner-integration-api-morphvm-mkofwuzh.http.cloud.morph.so/api",
+    "analytics": "https://data-analytics-ai-morphvm-mkofwuzh.http.cloud.morph.so/api",
+    "websocket": "wss://hms-backend-final-morphvm-mkofwuzh.http.cloud.morph.so"
+  },
+  "results": {
+    "successRate": "36.8",
+    "totalTests": 38,
+    "passed": 14,
+    "failed": 24,
+    "modules": {
+      "infrastructure": {
+        "passed": 4,
+        "failed": 0
+      },
+      "authentication": {
+        "passed": 1,
+        "failed": 4
+      },
+      "patients": {
+        "passed": 1,
+        "failed": 2
+      },
+      "medical-records": {
+        "passed": 0,
+        "failed": 2
+      },
+      "billing": {
+        "passed": 1,
+        "failed": 2
+      },
+      "inventory": {
+        "passed": 0,
+        "failed": 3
+      },
+      "staff": {
+        "passed": 0,
+        "failed": 3
+      },
+      "beds": {
+        "passed": 0,
+        "failed": 3
+      },
+      "analytics": {
+        "passed": 0,
+        "failed": 4
+      },
+      "integrations": {
+        "passed": 2,
+        "failed": 0
+      },
+      "security": {
+        "passed": 2,
+        "failed": 1
+      },
+      "performance": {
+        "passed": 3,
+        "failed": 0
+      }
+    }
+  },
+  "details": {
+    "total": 38,
+    "passed": 14,
+    "failed": 24,
+    "modules": {
+      "infrastructure": {
+        "passed": 4,
+        "failed": 0
+      },
+      "authentication": {
+        "passed": 1,
+        "failed": 4
+      },
+      "patients": {
+        "passed": 1,
+        "failed": 2
+      },
+      "medical-records": {
+        "passed": 0,
+        "failed": 2
+      },
+      "billing": {
+        "passed": 1,
+        "failed": 2
+      },
+      "inventory": {
+        "passed": 0,
+        "failed": 3
+      },
+      "staff": {
+        "passed": 0,
+        "failed": 3
+      },
+      "beds": {
+        "passed": 0,
+        "failed": 3
+      },
+      "analytics": {
+        "passed": 0,
+        "failed": 4
+      },
+      "integrations": {
+        "passed": 2,
+        "failed": 0
+      },
+      "security": {
+        "passed": 2,
+        "failed": 1
+      },
+      "performance": {
+        "passed": 3,
+        "failed": 0
+      }
+    }
+  }
+}
