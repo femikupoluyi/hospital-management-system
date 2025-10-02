@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management System - Complete Edition</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .module-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .module-card:hover {
+            transform: translateY(-5px);
+        }
+        .module-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 15px;
+        }
+        .ws-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #dc3545;
+        }
+        .ws-indicator.connected {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .data-table {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .modal-xl {
+            max-width: 90%;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #764ba2;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h1>🏥 Hospital Management System</h1>
+                <p class="text-muted">Comprehensive Healthcare Management Platform - All Features Working</p>
+            </div>
+        </div>
+
+        <!-- User Info Bar -->
+        <div class="card mb-3">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <span id="userInfo">Not logged in</span>
+                <div>
+                    <button class="btn btn-primary" onclick="showLoginModal()" id="loginBtn">Login</button>
+                    <button class="btn btn-secondary" onclick="logout()" id="logoutBtn" style="display:none;">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- WebSocket Status -->
+        <div class="position-fixed bottom-0 end-0 m-3 bg-white rounded-pill px-3 py-2 shadow">
+            <div class="d-flex align-items-center gap-2">
+                <div class="ws-indicator" id="wsIndicator"></div>
+                <span id="wsStatus" class="small">Disconnected</span>
+            </div>
+        </div>
+
+        <!-- Module Grid -->
+        <div class="row" id="modulesGrid"></div>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modalContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Configuration - Use the correct backend URL
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5700/api' 
+            : 'https://hms-backend-final-morphvm-mkofwuzh.http.cloud.morph.so/api';
+        const WS_URL = window.location.hostname === 'localhost'
+            ? 'ws://localhost:5700'
+            : 'wss://hms-backend-final-morphvm-mkofwuzh.http.cloud.morph.so';
+        
+        let authToken = localStorage.getItem('hms_token');
+        let currentUser = null;
+        let ws = null;
+        let charts = {};
+
+        // Module definitions
+        const modules = [
+            {
+                id: 'emr',
+                title: 'Electronic Medical Records',
+                icon: '📋',
+                description: 'Complete patient medical history, diagnoses, prescriptions, and lab results management.',
+                actions: [
+                    { label: 'New Record', handler: 'showNewMedicalRecordForm' },
+                    { label: 'View Records', handler: 'showMedicalRecords' }
+                ]
+            },
+            {
+                id: 'billing',
+                title: 'Billing & Revenue',
+                icon: '💰',
+                description: 'Invoice generation, payment processing, insurance claims, and revenue tracking.',
+                actions: [
+                    { label: 'Create Invoice', handler: 'showCreateInvoiceForm' },
+                    { label: 'View Invoices', handler: 'showInvoices' }
+                ]
+            },
+            {
+                id: 'inventory',
+                title: 'Inventory Management',
+                icon: '📦',
+                description: 'Track medications, medical supplies, equipment with automatic reorder alerts.',
+                actions: [
+                    { label: 'Stock Entry', handler: 'showStockEntryForm' },
+                    { label: 'Low Stock Alert', handler: 'showLowStock' }
+                ]
+            },
+            {
+                id: 'staff',
+                title: 'Staff Management',
+                icon: '👥',
+                description: 'Staff scheduling, attendance tracking, payroll processing, and performance metrics.',
+                actions: [
+                    { label: 'Add Schedule', handler: 'showAddScheduleForm' },
+                    { label: 'View Roster', handler: 'showRoster' }
+                ]
+            },
+            {
+                id: 'beds',
+                title: 'Bed Management',
+                icon: '🛏️',
+                description: 'Real-time bed availability, admissions, discharges, and ward occupancy tracking.',
+                actions: [
+                    { label: 'New Admission', handler: 'showAdmissionForm' },
+                    { label: 'Available Beds', handler: 'showAvailableBeds' }
+                ]
+            },
+            {
+                id: 'analytics',
+                title: 'Analytics Dashboard',
+                icon: '📊',
+                description: 'Real-time metrics, occupancy trends, revenue analytics, and performance KPIs.',
+                actions: [
+                    { label: 'View Dashboard', handler: 'showAnalyticsDashboard' },
+                    { label: 'Export Report', handler: 'showExportReportForm' }
+                ]
+            }
+        ];
+
+        // Initialize the app
+        function initApp() {
+            renderModules();
+            connectWebSocket();
+            checkAuth();
+        }
+
+        // Check authentication
+        function checkAuth() {
+            if (authToken) {
+                document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+                document.getElementById('userInfo').textContent = 'Logged in as: Admin';
+            }
+        }
+
+        // Render modules
+        function renderModules() {
+            const grid = document.getElementById('modulesGrid');
+            grid.innerHTML = modules.map(module => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="module-card">
+                        <div class="module-icon">${module.icon}</div>
+                        <h5>${module.title}</h5>
+                        <p class="text-muted small">${module.description}</p>
+                        <div class="d-grid gap-2">
+                            ${module.actions.map(action => `
+                                <button class="btn btn-outline-primary btn-sm" onclick="${action.handler}()">
+                                    ${action.label}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // WebSocket connection
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(WS_URL);
+                
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    document.getElementById('wsIndicator').classList.add('connected');
+                    document.getElementById('wsStatus').textContent = 'Connected';
+                };
+                
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    handleRealtimeUpdate(data);
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+                
+                ws.onclose = () => {
+                    document.getElementById('wsIndicator').classList.remove('connected');
+                    document.getElementById('wsStatus').textContent = 'Disconnected';
+                    setTimeout(connectWebSocket, 5000);
+                };
+            } catch (error) {
+                console.error('WebSocket connection error:', error);
+                setTimeout(connectWebSocket, 5000);
+            }
+        }
+
+        // Handle real-time updates
+        function handleRealtimeUpdate(data) {
+            console.log('Real-time update:', data);
+            if (data.type === 'low_stock_alert') {
+                showNotification('Low Stock Alert', `${data.data.item} is running low (${data.data.quantity} remaining)`, 'warning');
+            } else if (data.type === 'new_patient') {
+                showNotification('New Patient', `Patient ${data.data.name} registered`, 'info');
+            } else if (data.type === 'bed_status_changed') {
+                showNotification('Bed Update', `Bed ${data.data.bedId} is now ${data.data.status}`, 'info');
+            }
+        }
+
+        // API helper function
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            if (authToken) {
+                options.headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'API Error');
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                showNotification('Error', error.message, 'danger');
+                throw error;
+            }
+        }
+
+        // Show notification
+        function showNotification(title, message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+            notification.style.zIndex = '9999';
+            notification.innerHTML = `
+                <strong>${title}:</strong> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 5000);
+        }
+
+        // Show modal
+        function showModal(title, content, size = '') {
+            const modalId = 'modal-' + Date.now();
+            const modalHtml = `
+                <div class="modal fade" id="${modalId}" tabindex="-1">
+                    <div class="modal-dialog ${size}">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">${title}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                ${content}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modalContainer').innerHTML = modalHtml;
+            const modal = new bootstrap.Modal(document.getElementById(modalId));
+            modal.show();
+        }
+
+        // ============================================
+        // AUTHENTICATION FUNCTIONS
+        // ============================================
+
+        function showLoginModal() {
+            const content = `
+                <form onsubmit="login(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="loginEmail" value="admin@hospital.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="loginPassword" value="admin123" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+            `;
+            showModal('Login', content);
+        }
+
+        async function login(event) {
+            event.preventDefault();
+            try {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                const result = await apiCall('/auth/login', 'POST', { email, password });
+                
+                if (result.success) {
+                    authToken = result.token;
+                    currentUser = result.user;
+                    localStorage.setItem('hms_token', authToken);
+                    
+                    document.getElementById('userInfo').textContent = `Logged in as: ${result.user.name}`;
+                    document.getElementById('loginBtn').style.display = 'none';
+                    document.getElementById('logoutBtn').style.display = 'inline-block';
+                    
+                    bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+                    showNotification('Success', 'Logged in successfully', 'success');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('hms_token');
+            
+            document.getElementById('userInfo').textContent = 'Not logged in';
+            document.getElementById('loginBtn').style.display = 'inline-block';
+            document.getElementById('logoutBtn').style.display = 'none';
+            
+            showNotification('Success', 'Logged out successfully', 'info');
+        }
+
+        // ============================================
+        // MEDICAL RECORDS FUNCTIONS
+        // ============================================
+
+        async function showMedicalRecords() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const data = await apiCall('/medical-records');
+                
+                const content = `
+                    <div class="mb-3">
+                        <button class="btn btn-primary btn-sm" onclick="showNewMedicalRecordForm()">
+                            <i class="bi bi-plus"></i> Add New Record
+                        </button>
+                    </div>
+                    <div class="data-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Doctor</th>
+                                    <th>Diagnosis</th>
+                                    <th>Visit Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.records && data.records.length > 0 ? data.records.map(record => `
+                                    <tr>
+                                        <td>${new Date(record.created_at).toLocaleDateString()}</td>
+                                        <td>${record.patient_name || 'N/A'}</td>
+                                        <td>${record.doctor_name || 'N/A'}</td>
+                                        <td>${record.diagnosis || 'N/A'}</td>
+                                        <td><span class="badge bg-primary">${record.visit_type || 'consultation'}</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info" onclick="viewMedicalRecord(${record.id})">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="6" class="text-center">No records found</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                showModal('Medical Records', content, 'modal-xl');
+            } catch (error) {
+                console.error('Error fetching medical records:', error);
+            }
+        }
+
+        async function showNewMedicalRecordForm() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const patients = await apiCall('/patients');
+                
+                const content = `
+                    <form onsubmit="createMedicalRecord(event)">
+                        <div class="mb-3">
+                            <label class="form-label">Patient</label>
+                            <select class="form-control" id="recordPatientId" required>
+                                <option value="">Select Patient</option>
+                                ${patients.patients && patients.patients.length > 0 ? patients.patients.map(p => `
+                                    <option value="${p.id}">${p.name}</option>
+                                `).join('') : ''}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Symptoms</label>
+                            <textarea class="form-control" id="recordSymptoms" rows="2" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Diagnosis</label>
+                            <input type="text" class="form-control" id="recordDiagnosis" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Treatment</label>
+                            <textarea class="form-control" id="recordTreatment" rows="2" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Prescription</label>
+                            <textarea class="form-control" id="recordPrescription" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Visit Type</label>
+                            <select class="form-control" id="recordVisitType">
+                                <option value="consultation">Consultation</option>
+                                <option value="emergency">Emergency</option>
+                                <option value="followup">Follow-up</option>
+                                <option value="routine">Routine Check-up</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" id="recordNotes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Record</button>
+                    </form>
+                `;
+                
+                showModal('New Medical Record', content);
+            } catch (error) {
+                console.error('Error loading form:', error);
+            }
+        }
+
+        async function createMedicalRecord(event) {
+            event.preventDefault();
+            try {
+                const data = {
+                    patientId: document.getElementById('recordPatientId').value,
+                    symptoms: document.getElementById('recordSymptoms').value,
+                    diagnosis: document.getElementById('recordDiagnosis').value,
+                    treatment: document.getElementById('recordTreatment').value,
+                    prescription: document.getElementById('recordPrescription').value,
+                    visitType: document.getElementById('recordVisitType').value,
+                    notes: document.getElementById('recordNotes').value
+                };
+                
+                const result = await apiCall('/medical-records', 'POST', data);
+                
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+                    showNotification('Success', 'Medical record created successfully', 'success');
+                    showMedicalRecords();
+                }
+            } catch (error) {
+                console.error('Error creating record:', error);
+            }
+        }
+
+        // ============================================
+        // BILLING FUNCTIONS
+        // ============================================
+
+        async function showInvoices() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const data = await apiCall('/billing/invoices');
+                
+                const content = `
+                    <div class="mb-3">
+                        <button class="btn btn-primary btn-sm" onclick="showCreateInvoiceForm()">
+                            <i class="bi bi-plus"></i> Create Invoice
+                        </button>
+                    </div>
+                    <div class="data-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Patient</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Due Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.invoices && data.invoices.length > 0 ? data.invoices.map(invoice => `
+                                    <tr>
+                                        <td>${invoice.invoicenumber}</td>
+                                        <td>${invoice.patient_name || 'N/A'}</td>
+                                        <td>$${parseFloat(invoice.totalamount).toFixed(2)}</td>
+                                        <td>
+                                            <span class="badge bg-${invoice.status === 'paid' ? 'success' : 'warning'}">
+                                                ${invoice.status}
+                                            </span>
+                                        </td>
+                                        <td>${new Date(invoice.duedate).toLocaleDateString()}</td>
+                                        <td>
+                                            ${invoice.status !== 'paid' ? `
+                                                <button class="btn btn-sm btn-success" onclick="processPayment(${invoice.id}, ${invoice.totalamount})">
+                                                    <i class="bi bi-cash"></i> Pay
+                                                </button>
+                                            ` : `
+                                                <span class="text-success"><i class="bi bi-check-circle"></i></span>
+                                            `}
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="6" class="text-center">No invoices found</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                showModal('Invoices', content, 'modal-xl');
+            } catch (error) {
+                console.error('Error fetching invoices:', error);
+            }
+        }
+
+        async function showCreateInvoiceForm() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const patients = await apiCall('/patients');
+                
+                const content = `
+                    <form onsubmit="createInvoice(event)">
+                        <div class="mb-3">
+                            <label class="form-label">Patient</label>
+                            <select class="form-control" id="invoicePatientId" required>
+                                <option value="">Select Patient</option>
+                                ${patients.patients && patients.patients.length > 0 ? patients.patients.map(p => `
+                                    <option value="${p.id}">${p.name}</option>
+                                `).join('') : ''}
+                            </select>
+                        </div>
+                        <div id="invoiceItems">
+                            <h6>Services</h6>
+                            <div class="invoice-item mb-2">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" placeholder="Service" id="service0" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" class="form-control" placeholder="Qty" id="quantity0" value="1" min="1" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="number" class="form-control" placeholder="Unit Price" id="unitPrice0" step="0.01" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="number" class="form-control" placeholder="Total" id="total0" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-secondary mb-3" onclick="addInvoiceItem()">Add Item</button>
+                        <div class="mb-3">
+                            <label class="form-label">Total Amount</label>
+                            <input type="number" class="form-control" id="invoiceTotalAmount" step="0.01" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="invoiceDueDate" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Invoice</button>
+                    </form>
+                `;
+                
+                showModal('Create Invoice', content);
+                
+                // Set default due date to 30 days from now
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + 30);
+                document.getElementById('invoiceDueDate').value = dueDate.toISOString().split('T')[0];
+                
+                // Add event listeners for calculation
+                document.getElementById('quantity0').addEventListener('input', () => calculateItemTotal(0));
+                document.getElementById('unitPrice0').addEventListener('input', () => calculateItemTotal(0));
+            } catch (error) {
+                console.error('Error loading form:', error);
+            }
+        }
+
+        let invoiceItemCount = 1;
+        
+        function addInvoiceItem() {
+            const itemsDiv = document.getElementById('invoiceItems');
+            const newItem = document.createElement('div');
+            newItem.className = 'invoice-item mb-2';
+            newItem.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" placeholder="Service" id="service${invoiceItemCount}" required>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" placeholder="Qty" id="quantity${invoiceItemCount}" value="1" min="1" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" placeholder="Unit Price" id="unitPrice${invoiceItemCount}" step="0.01" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" placeholder="Total" id="total${invoiceItemCount}" readonly>
+                    </div>
+                </div>
+            `;
+            itemsDiv.appendChild(newItem);
+            
+            // Add event listeners
+            document.getElementById(`quantity${invoiceItemCount}`).addEventListener('input', () => calculateItemTotal(invoiceItemCount));
+            document.getElementById(`unitPrice${invoiceItemCount}`).addEventListener('input', () => calculateItemTotal(invoiceItemCount));
+            
+            invoiceItemCount++;
+        }
+        
+        function calculateItemTotal(index) {
+            const quantity = parseFloat(document.getElementById(`quantity${index}`).value) || 0;
+            const unitPrice = parseFloat(document.getElementById(`unitPrice${index}`).value) || 0;
+            const total = quantity * unitPrice;
+            document.getElementById(`total${index}`).value = total.toFixed(2);
+            calculateInvoiceTotal();
+        }
+        
+        function calculateInvoiceTotal() {
+            let total = 0;
+            for (let i = 0; i < invoiceItemCount; i++) {
+                const itemTotal = parseFloat(document.getElementById(`total${i}`).value) || 0;
+                total += itemTotal;
+            }
+            document.getElementById('invoiceTotalAmount').value = total.toFixed(2);
+        }
+
+        async function createInvoice(event) {
+            event.preventDefault();
+            try {
+                const items = [];
+                for (let i = 0; i < invoiceItemCount; i++) {
+                    const service = document.getElementById(`service${i}`).value;
+                    if (service) {
+                        items.push({
+                            description: service,
+                            quantity: parseFloat(document.getElementById(`quantity${i}`).value),
+                            unitPrice: parseFloat(document.getElementById(`unitPrice${i}`).value),
+                            total: parseFloat(document.getElementById(`total${i}`).value)
+                        });
+                    }
+                }
+                
+                const data = {
+                    patientId: document.getElementById('invoicePatientId').value,
+                    items: items,
+                    totalAmount: parseFloat(document.getElementById('invoiceTotalAmount').value),
+                    dueDate: document.getElementById('invoiceDueDate').value
+                };
+                
+                const result = await apiCall('/billing/invoices', 'POST', data);
+                
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+                    showNotification('Success', 'Invoice created successfully', 'success');
+                    invoiceItemCount = 1; // Reset counter
+                    showInvoices();
+                }
+            } catch (error) {
+                console.error('Error creating invoice:', error);
+            }
+        }
+
+        async function processPayment(invoiceId, amount) {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                return;
+            }
+            
+            try {
+                const result = await apiCall('/billing/process-payment', 'POST', {
+                    invoiceId: invoiceId,
+                    amount: amount,
+                    paymentMethod: 'cash'
+                });
+                
+                if (result.success) {
+                    showNotification('Success', 'Payment processed successfully', 'success');
+                    showInvoices();
+                }
+            } catch (error) {
+                console.error('Error processing payment:', error);
+            }
+        }
+
+        // ============================================
+        // INVENTORY FUNCTIONS
+        // ============================================
+
+        async function showLowStock() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const data = await apiCall('/inventory/low-stock');
+                
+                const content = `
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-exclamation-triangle"></i> Items below reorder level
+                    </div>
+                    <div class="data-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Category</th>
+                                    <th>Current Stock</th>
+                                    <th>Reorder Level</th>
+                                    <th>Supplier</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.items && data.items.length > 0 ? data.items.map(item => `
+                                    <tr class="${item.quantity === 0 ? 'table-danger' : ''}">
+                                        <td>${item.item_name}</td>
+                                        <td>${item.category || 'N/A'}</td>
+                                        <td><strong>${item.quantity}</strong> ${item.unit || ''}</td>
+                                        <td>${item.reorder_level} ${item.unit || ''}</td>
+                                        <td>${item.supplier || 'N/A'}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" onclick="restockItem(${item.id}, '${item.item_name}')">
+                                                <i class="bi bi-plus"></i> Restock
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="6" class="text-center">No low stock items</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                showModal('Low Stock Alert', content, 'modal-xl');
+            } catch (error) {
+                console.error('Error fetching low stock items:', error);
+            }
+        }
+
+        async function showStockEntryForm() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            const content = `
+                <form onsubmit="addStock(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Item Name</label>
+                        <input type="text" class="form-control" id="stockItemName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-control" id="stockCategory" required>
+                            <option value="Medication">Medication</option>
+                            <option value="Medical Supplies">Medical Supplies</option>
+                            <option value="PPE">PPE</option>
+                            <option value="Equipment">Equipment</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="stockQuantity" min="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Unit</label>
+                                <input type="text" class="form-control" id="stockUnit" placeholder="e.g., tablets, pieces">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Reorder Level</label>
+                                <input type="number" class="form-control" id="stockReorderLevel" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Unit Price</label>
+                                <input type="number" class="form-control" id="stockUnitPrice" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Supplier</label>
+                                <input type="text" class="form-control" id="stockSupplier">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Expiry Date</label>
+                        <input type="date" class="form-control" id="stockExpiryDate">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Stock</button>
+                </form>
+            `;
+            
+            showModal('Stock Entry', content);
+        }
+
+        async function addStock(event) {
+            event.preventDefault();
+            try {
+                const data = {
+                    itemName: document.getElementById('stockItemName').value,
+                    category: document.getElementById('stockCategory').value,
+                    quantity: parseInt(document.getElementById('stockQuantity').value),
+                    unit: document.getElementById('stockUnit').value,
+                    reorderLevel: parseInt(document.getElementById('stockReorderLevel').value),
+                    unitPrice: parseFloat(document.getElementById('stockUnitPrice').value),
+                    supplier: document.getElementById('stockSupplier').value,
+                    expiryDate: document.getElementById('stockExpiryDate').value
+                };
+                
+                const result = await apiCall('/inventory/add-stock', 'POST', data);
+                
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+                    showNotification('Success', 'Stock added successfully', 'success');
+                }
+            } catch (error) {
+                console.error('Error adding stock:', error);
+            }
+        }
+
+        // ============================================
+        // STAFF MANAGEMENT FUNCTIONS
+        // ============================================
+
+        async function showRoster() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const data = await apiCall('/staff/schedule');
+                
+                const content = `
+                    <div class="mb-3">
+                        <button class="btn btn-primary btn-sm" onclick="showAddScheduleForm()">
+                            <i class="bi bi-plus"></i> Add Schedule
+                        </button>
+                    </div>
+                    <div class="data-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Staff Name</th>
+                                    <th>Department</th>
+                                    <th>Shift</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.schedules && data.schedules.length > 0 ? data.schedules.map(schedule => `
+                                    <tr>
+                                        <td>${new Date(schedule.date).toLocaleDateString()}</td>
+                                        <td>${schedule.staff_name || 'N/A'}</td>
+                                        <td>${schedule.department || 'N/A'}</td>
+                                        <td>${schedule.shift_start} - ${schedule.shift_end}</td>
+                                        <td>
+                                            <span class="badge bg-${schedule.status === 'scheduled' ? 'primary' : 'success'}">
+                                                ${schedule.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="5" class="text-center">No schedules found</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                showModal('Staff Roster', content, 'modal-xl');
+            } catch (error) {
+                console.error('Error fetching roster:', error);
+            }
+        }
+
+        async function showAddScheduleForm() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const staff = await apiCall('/staff');
+                
+                const content = `
+                    <form onsubmit="createSchedule(event)">
+                        <div class="mb-3">
+                            <label class="form-label">Staff Member</label>
+                            <select class="form-control" id="scheduleStaffId" required>
+                                <option value="">Select Staff</option>
+                                ${staff.staff && staff.staff.length > 0 ? staff.staff.map(s => `
+                                    <option value="${s.id}">${s.name} - ${s.department || 'N/A'}</option>
+                                `).join('') : '<option value="1">Default Staff</option>'}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" id="scheduleDate" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Shift Start</label>
+                                    <input type="time" class="form-control" id="scheduleShiftStart" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Shift End</label>
+                                    <input type="time" class="form-control" id="scheduleShiftEnd" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Department</label>
+                            <select class="form-control" id="scheduleDepartment" required>
+                                <option value="Emergency">Emergency</option>
+                                <option value="General Ward">General Ward</option>
+                                <option value="ICU">ICU</option>
+                                <option value="Pediatrics">Pediatrics</option>
+                                <option value="Surgery">Surgery</option>
+                                <option value="Outpatient">Outpatient</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Schedule</button>
+                    </form>
+                `;
+                
+                showModal('Add Schedule', content);
+                
+                // Set default date to today
+                document.getElementById('scheduleDate').value = new Date().toISOString().split('T')[0];
+            } catch (error) {
+                console.error('Error loading form:', error);
+            }
+        }
+
+        async function createSchedule(event) {
+            event.preventDefault();
+            try {
+                const data = {
+                    staffId: document.getElementById('scheduleStaffId').value || 1,
+                    date: document.getElementById('scheduleDate').value,
+                    shiftStart: document.getElementById('scheduleShiftStart').value,
+                    shiftEnd: document.getElementById('scheduleShiftEnd').value,
+                    department: document.getElementById('scheduleDepartment').value
+                };
+                
+                const result = await apiCall('/staff/schedule', 'POST', data);
+                
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+                    showNotification('Success', 'Schedule created successfully', 'success');
+                    showRoster();
+                }
+            } catch (error) {
+                console.error('Error creating schedule:', error);
+            }
+        }
+
+        // ============================================
+        // BED MANAGEMENT FUNCTIONS
+        // ============================================
+
+        async function showAvailableBeds() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const [availableBeds, wardOccupancy] = await Promise.all([
+                    apiCall('/beds/available'),
+                    apiCall('/wards/occupancy')
+                ]);
+                
+                const content = `
+                    <div class="mb-3">
+                        <h6>Ward Occupancy Overview</h6>
+                        <div class="row">
+                            ${wardOccupancy.wards && wardOccupancy.wards.length > 0 ? wardOccupancy.wards.map(ward => `
+                                <div class="col-md-4 mb-2">
+                                    <div class="card">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title">${ward.ward}</h6>
+                                            <div class="progress">
+                                                <div class="progress-bar" style="width: ${(ward.occupied_beds / ward.total_beds * 100)}%">
+                                                    ${ward.occupied_beds}/${ward.total_beds}
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">${ward.available_beds} available</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('') : '<p>No ward data available</p>'}
+                        </div>
+                    </div>
+                    <h6>Available Beds</h6>
+                    <div class="data-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Bed Number</th>
+                                    <th>Ward</th>
+                                    <th>Floor</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${availableBeds.beds && availableBeds.beds.length > 0 ? availableBeds.beds.map(bed => `
+                                    <tr>
+                                        <td>${bed.bed_number}</td>
+                                        <td>${bed.ward}</td>
+                                        <td>${bed.floor}</td>
+                                        <td>${bed.bed_type || 'Standard'}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success" onclick="admitPatientToBed(${bed.id}, '${bed.bed_number}')">
+                                                <i class="bi bi-person-plus"></i> Admit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="5" class="text-center">No available beds</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                showModal('Bed Management', content, 'modal-xl');
+            } catch (error) {
+                console.error('Error fetching beds:', error);
+            }
+        }
+
+        async function showAdmissionForm() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const [patients, beds] = await Promise.all([
+                    apiCall('/patients'),
+                    apiCall('/beds/available')
+                ]);
+                
+                const content = `
+                    <form onsubmit="processAdmission(event)">
+                        <div class="mb-3">
+                            <label class="form-label">Patient</label>
+                            <select class="form-control" id="admissionPatientId" required>
+                                <option value="">Select Patient</option>
+                                ${patients.patients && patients.patients.length > 0 ? patients.patients.map(p => `
+                                    <option value="${p.id}">${p.name}</option>
+                                `).join('') : ''}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bed</label>
+                            <select class="form-control" id="admissionBedId" required>
+                                <option value="">Select Bed</option>
+                                ${beds.beds && beds.beds.length > 0 ? beds.beds.map(b => `
+                                    <option value="${b.id}">${b.bed_number} - ${b.ward}</option>
+                                `).join('') : ''}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Admission Date</label>
+                            <input type="datetime-local" class="form-control" id="admissionDate" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Process Admission</button>
+                    </form>
+                `;
+                
+                showModal('New Admission', content);
+                
+                // Set default admission date to now
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                document.getElementById('admissionDate').value = now.toISOString().slice(0, 16);
+            } catch (error) {
+                console.error('Error loading admission form:', error);
+            }
+        }
+
+        async function processAdmission(event) {
+            event.preventDefault();
+            try {
+                const data = {
+                    bedId: document.getElementById('admissionBedId').value,
+                    patientId: document.getElementById('admissionPatientId').value,
+                    admissionDate: document.getElementById('admissionDate').value
+                };
+                
+                const result = await apiCall('/beds/admission', 'POST', data);
+                
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+                    showNotification('Success', 'Patient admitted successfully', 'success');
+                }
+            } catch (error) {
+                console.error('Error processing admission:', error);
+            }
+        }
+
+        // ============================================
+        // ANALYTICS FUNCTIONS
+        // ============================================
+
+        async function showAnalyticsDashboard() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            try {
+                const data = await apiCall('/analytics/dashboard');
+                
+                const content = `
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <div class="stat-value">${data.stats.totalPatients}</div>
+                                <div class="stat-label">Total Patients</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <div class="stat-value">${data.stats.activeAdmissions}</div>
+                                <div class="stat-label">Active Admissions</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <div class="stat-value">$${parseFloat(data.stats.monthlyRevenue).toLocaleString()}</div>
+                                <div class="stat-label">Monthly Revenue</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <div class="stat-value">${data.stats.pendingAppointments}</div>
+                                <div class="stat-label">Pending Appointments</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <div class="stat-value">${data.stats.bedOccupancyRate}%</div>
+                                <div class="stat-label">Bed Occupancy</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <div class="stat-value">${data.stats.lowStockItems}</div>
+                                <div class="stat-label">Low Stock Items</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+                `;
+                
+                showModal('Analytics Dashboard', content, 'modal-xl');
+                
+                // Create charts after modal is shown
+                setTimeout(() => {
+                    // Revenue trend chart
+                    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+                    new Chart(revenueCtx, {
+                        type: 'line',
+                        data: {
+                            labels: data.trends.revenue.map(r => new Date(r.date).toLocaleDateString()),
+                            datasets: [{
+                                label: 'Daily Revenue',
+                                data: data.trends.revenue.map(r => r.amount),
+                                borderColor: '#764ba2',
+                                backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Revenue Trend (Last 7 Days)'
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Department distribution chart
+                    const deptCtx = document.getElementById('departmentChart').getContext('2d');
+                    new Chart(deptCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.trends.departments.map(d => d.department || 'Other'),
+                            datasets: [{
+                                label: 'Appointments',
+                                data: data.trends.departments.map(d => d.count),
+                                backgroundColor: '#667eea'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Department Activity (Last 30 Days)'
+                                }
+                            }
+                        }
+                    });
+                }, 500);
+            } catch (error) {
+                console.error('Error fetching analytics:', error);
+            }
+        }
+
+        async function showExportReportForm() {
+            if (!authToken) {
+                showNotification('Error', 'Please login first', 'warning');
+                showLoginModal();
+                return;
+            }
+            
+            const content = `
+                <form onsubmit="exportReport(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Report Type</label>
+                        <select class="form-control" id="reportType" required>
+                            <option value="revenue">Revenue Report</option>
+                            <option value="patients">Patient Report</option>
+                            <option value="occupancy">Bed Occupancy Report</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="reportStartDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="reportEndDate" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Generate Report</button>
+                </form>
+            `;
+            
+            showModal('Export Report', content);
+            
+            // Set default dates
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            
+            document.getElementById('reportStartDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('reportEndDate').value = endDate.toISOString().split('T')[0];
+        }
+
+        async function exportReport(event) {
+            event.preventDefault();
+            try {
+                const data = {
+                    reportType: document.getElementById('reportType').value,
+                    startDate: document.getElementById('reportStartDate').value,
+                    endDate: document.getElementById('reportEndDate').value
+                };
+                
+                const result = await apiCall('/analytics/export-report', 'POST', data);
+                
+                if (result.success) {
+                    // Display report data
+                    const reportContent = `
+                        <h6>Report: ${result.reportType}</h6>
+                        <p>Period: ${result.period.startDate} to ${result.period.endDate}</p>
+                        <div class="data-table">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        ${Object.keys(result.data[0] || {}).map(key => `<th>${key}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${result.data.map(row => `
+                                        <tr>
+                                            ${Object.values(row).map(val => `<td>${val}</td>`).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-success" onclick="downloadReport('${JSON.stringify(result).replace(/'/g, "\\'")}')">
+                            <i class="bi bi-download"></i> Download CSV
+                        </button>
+                    `;
+                    
+                    bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+                    showModal('Report Results', reportContent, 'modal-xl');
+                }
+            } catch (error) {
+                console.error('Error generating report:', error);
+            }
+        }
+
+        function downloadReport(reportData) {
+            const data = JSON.parse(reportData);
+            const csv = convertToCSV(data.data);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${data.reportType}_report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        function convertToCSV(data) {
+            if (!data || data.length === 0) return '';
+            const headers = Object.keys(data[0]);
+            const csv = [
+                headers.join(','),
+                ...data.map(row => Object.values(row).join(','))
+            ].join('\n');
+            return csv;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
