@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management System - Complete</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .module-card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .module-icon { width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
+        .ws-indicator { width: 10px; height: 10px; border-radius: 50%; background: #dc3545; }
+        .ws-indicator.connected { background: #28a745; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h1>🏥 Hospital Management System</h1>
+                <p class="text-muted">Comprehensive Healthcare Management Platform - All Modules Fully Functional</p>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <span id="userInfo">Not logged in</span>
+                <div>
+                    <button class="btn btn-primary" onclick="showLoginModal()">Login</button>
+                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="position-fixed bottom-0 end-0 m-3 bg-white rounded-pill px-3 py-2 shadow">
+            <div class="d-flex align-items-center gap-2">
+                <div class="ws-indicator" id="wsIndicator"></div>
+                <span id="wsStatus" class="small">Disconnected</span>
+            </div>
+        </div>
+
+        <div class="row" id="modulesGrid"></div>
+    </div>
+
+    <!-- Bootstrap Modal Container -->
+    <div id="modalContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuration
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5500' 
+            : 'https://hms-backend-api-morphvm-mkofwuzh.http.cloud.morph.so';
+        let authToken = localStorage.getItem('hms_token');
+        let currentUser = null;
+        let ws = null;
+
+        // Module definitions
+        const modules = [
+            {
+                icon: '📋',
+                title: 'Electronic Medical Records',
+                description: 'Complete patient medical history, diagnoses, prescriptions, and lab results management.',
+                actions: [
+                    { label: 'New Record', handler: 'showNewRecordModal', primary: true },
+                    { label: 'View Records', handler: 'showViewRecordsModal' }
+                ]
+            },
+            {
+                icon: '💰',
+                title: 'Billing & Revenue',
+                description: 'Invoice generation, payment processing, insurance claims, and revenue tracking.',
+                actions: [
+                    { label: 'Create Invoice', handler: 'showCreateInvoiceModal', primary: true },
+                    { label: 'View Invoices', handler: 'showViewInvoicesModal' }
+                ]
+            },
+            {
+                icon: '📦',
+                title: 'Inventory Management',
+                description: 'Track medications, medical supplies, equipment with automatic reorder alerts.',
+                actions: [
+                    { label: 'Stock Entry', handler: 'showStockEntryModal', primary: true },
+                    { label: 'Low Stock Alert', handler: 'showLowStockAlert' }
+                ]
+            },
+            {
+                icon: '👥',
+                title: 'Staff Management',
+                description: 'Staff scheduling, attendance tracking, payroll processing, and performance metrics.',
+                actions: [
+                    { label: 'Add Schedule', handler: 'showAddScheduleModal', primary: true },
+                    { label: 'View Roster', handler: 'showViewRosterModal' }
+                ]
+            },
+            {
+                icon: '🛏️',
+                title: 'Bed Management',
+                description: 'Real-time bed availability, admissions, discharges, and ward occupancy tracking.',
+                actions: [
+                    { label: 'New Admission', handler: 'showNewAdmissionModal', primary: true },
+                    { label: 'Available Beds', handler: 'showAvailableBedsModal' }
+                ]
+            },
+            {
+                icon: '📊',
+                title: 'Analytics Dashboard',
+                description: 'Real-time metrics, occupancy trends, revenue analytics, and performance KPIs.',
+                actions: [
+                    { label: 'View Dashboard', handler: 'showDashboard', primary: true },
+                    { label: 'Export Report', handler: 'exportReport' }
+                ]
+            }
+        ];
+
+        // Initialize modules grid
+        function initializeModules() {
+            const grid = document.getElementById('modulesGrid');
+            grid.innerHTML = modules.map(module => `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="module-card h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="module-icon me-3">${module.icon}</div>
+                            <h5 class="mb-0">${module.title}</h5>
+                        </div>
+                        <p class="text-muted">${module.description}</p>
+                        <div class="d-flex gap-2">
+                            ${module.actions.map(action => 
+                                `<button class="btn btn-sm ${action.primary ? 'btn-primary' : 'btn-outline-secondary'}" 
+                                    onclick="${action.handler}()">${action.label}</button>`
+                            ).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // WebSocket connection
+        function initWebSocket() {
+            const wsUrl = window.location.hostname === 'localhost'
+                ? 'ws://localhost:5500'
+                : 'wss://hms-backend-api-morphvm-mkofwuzh.http.cloud.morph.so';
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                document.getElementById('wsIndicator').classList.add('connected');
+                document.getElementById('wsStatus').textContent = 'Connected';
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                showToast(data.type.replace(/_/g, ' '), 'success');
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('wsIndicator').classList.remove('connected');
+                document.getElementById('wsStatus').textContent = 'Disconnected';
+                setTimeout(initWebSocket, 5000);
+            };
+        }
+
+        // API helper
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+            
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'API call failed');
+                return data;
+            } catch (error) {
+                showToast(error.message, 'danger');
+                throw error;
+            }
+        }
+
+        // Authentication
+        function showLoginModal() {
+            showModal('Login', `
+                <form onsubmit="handleLogin(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Username or Email</label>
+                        <input type="text" class="form-control" id="loginUsername" value="admin" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="loginPassword" value="admin123" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+            `);
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            try {
+                const response = await apiCall('/api/auth/login', 'POST', {
+                    username: document.getElementById('loginUsername').value,
+                    password: document.getElementById('loginPassword').value
+                });
+                authToken = response.token;
+                currentUser = response.user;
+                localStorage.setItem('hms_token', authToken);
+                document.getElementById('userInfo').textContent = `Logged in as: ${currentUser.username} (${currentUser.role})`;
+                closeModal();
+                showToast('Login successful', 'success');
+                await apiCall('/api/seed-data', 'POST'); // Seed data for testing
+            } catch (error) {
+                console.error('Login failed:', error);
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('hms_token');
+            document.getElementById('userInfo').textContent = 'Not logged in';
+            showToast('Logged out', 'info');
+        }
+
+        // Medical Records
+        async function showNewRecordModal() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const patients = await apiCall('/api/patients');
+            showModal('New Medical Record', `
+                <form onsubmit="handleCreateRecord(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Patient</label>
+                        <select class="form-select" id="recordPatientId" required>
+                            <option value="">Select Patient</option>
+                            ${patients.map(p => `<option value="${p.id}">${p.first_name} ${p.last_name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Visit Type</label>
+                        <select class="form-select" id="visitType" required>
+                            <option value="consultation">Consultation</option>
+                            <option value="follow-up">Follow-up</option>
+                            <option value="emergency">Emergency</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chief Complaint</label>
+                        <textarea class="form-control" id="chiefComplaint" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Assessment</label>
+                        <textarea class="form-control" id="assessment" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Plan</label>
+                        <textarea class="form-control" id="plan" rows="2" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Record</button>
+                </form>
+            `);
+        }
+
+        async function handleCreateRecord(event) {
+            event.preventDefault();
+            try {
+                await apiCall('/api/medical-records', 'POST', {
+                    patient_id: document.getElementById('recordPatientId').value,
+                    visit_type: document.getElementById('visitType').value,
+                    chief_complaint: document.getElementById('chiefComplaint').value,
+                    assessment: document.getElementById('assessment').value,
+                    plan: document.getElementById('plan').value,
+                    vital_signs: {}
+                });
+                closeModal();
+                showToast('Medical record created', 'success');
+            } catch (error) {
+                console.error('Failed to create record:', error);
+            }
+        }
+
+        async function showViewRecordsModal() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const records = await apiCall('/api/medical-records');
+            showModal('Medical Records', `
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Record ID</th>
+                                <th>Patient</th>
+                                <th>Visit Date</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${records.map(r => `
+                                <tr>
+                                    <td>${r.record_id}</td>
+                                    <td>${r.first_name} ${r.last_name}</td>
+                                    <td>${new Date(r.visit_date).toLocaleDateString()}</td>
+                                    <td>${r.visit_type}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `, 'modal-lg');
+        }
+
+        // Billing
+        async function showCreateInvoiceModal() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const patients = await apiCall('/api/patients');
+            showModal('Create Invoice', `
+                <form onsubmit="handleCreateInvoice(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Patient</label>
+                        <select class="form-select" id="invoicePatientId" required>
+                            <option value="">Select Patient</option>
+                            ${patients.map(p => `<option value="${p.id}">${p.first_name} ${p.last_name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" id="itemDesc" required>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="itemQty" value="1" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Unit Price</label>
+                            <input type="number" class="form-control" id="itemPrice" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="dueDate" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Invoice</button>
+                </form>
+            `);
+        }
+
+        async function handleCreateInvoice(event) {
+            event.preventDefault();
+            try {
+                await apiCall('/api/invoices', 'POST', {
+                    patient_id: document.getElementById('invoicePatientId').value,
+                    items: [{
+                        description: document.getElementById('itemDesc').value,
+                        category: 'consultation',
+                        quantity: parseInt(document.getElementById('itemQty').value),
+                        unit_price: parseFloat(document.getElementById('itemPrice').value)
+                    }],
+                    due_date: document.getElementById('dueDate').value,
+                    payment_method: 'cash'
+                });
+                closeModal();
+                showToast('Invoice created', 'success');
+            } catch (error) {
+                console.error('Failed to create invoice:', error);
+            }
+        }
+
+        async function showViewInvoicesModal() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const invoices = await apiCall('/api/invoices');
+            showModal('Invoices', `
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Patient</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${invoices.map(i => `
+                                <tr>
+                                    <td>${i.invoice_number}</td>
+                                    <td>${i.first_name} ${i.last_name}</td>
+                                    <td>$${parseFloat(i.total_amount).toFixed(2)}</td>
+                                    <td><span class="badge bg-${i.payment_status === 'paid' ? 'success' : 'warning'}">${i.payment_status}</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `, 'modal-lg');
+        }
+
+        // Inventory
+        async function showStockEntryModal() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            showModal('Stock Entry', `
+                <form onsubmit="handleStockEntry(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Item Name</label>
+                        <input type="text" class="form-control" id="itemName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="itemCategory" required>
+                            <option value="medication">Medication</option>
+                            <option value="consumable">Consumable</option>
+                            <option value="equipment">Equipment</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Unit</label>
+                            <input type="text" class="form-control" id="itemUnit" placeholder="e.g., tablets" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Stock</label>
+                            <input type="number" class="form-control" id="currentStock" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit Price</label>
+                        <input type="number" class="form-control" id="unitPrice" step="0.01" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </form>
+            `);
+        }
+
+        async function handleStockEntry(event) {
+            event.preventDefault();
+            try {
+                await apiCall('/api/inventory/items', 'POST', {
+                    name: document.getElementById('itemName').value,
+                    category: document.getElementById('itemCategory').value,
+                    unit: document.getElementById('itemUnit').value,
+                    current_stock: parseInt(document.getElementById('currentStock').value),
+                    unit_price: parseFloat(document.getElementById('unitPrice').value),
+                    minimum_stock: 10,
+                    reorder_level: 20
+                });
+                closeModal();
+                showToast('Item added to inventory', 'success');
+            } catch (error) {
+                console.error('Failed to add item:', error);
+            }
+        }
+
+        async function showLowStockAlert() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const items = await apiCall('/api/inventory/low-stock');
+            showModal('Low Stock Alert', `
+                <div class="alert alert-warning">${items.length} items are running low</div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Category</th>
+                                <th>Current Stock</th>
+                                <th>Reorder Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(i => `
+                                <tr>
+                                    <td>${i.name}</td>
+                                    <td>${i.category}</td>
+                                    <td class="text-danger fw-bold">${i.current_stock}</td>
+                                    <td>${i.reorder_level}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `, 'modal-lg');
+        }
+
+        // Staff Management
+        async function showAddScheduleModal() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const staff = await apiCall('/api/staff');
+            showModal('Add Schedule', `
+                <form onsubmit="handleAddSchedule(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Staff Member</label>
+                        <select class="form-select" id="scheduleStaffId" required>
+                            <option value="">Select Staff</option>
+                            ${staff.map(s => `<option value="${s.id}">${s.username} - ${s.designation || 'Staff'}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" id="scheduleDate" required>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Shift Start</label>
+                            <input type="time" class="form-control" id="shiftStart" value="09:00" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Shift End</label>
+                            <input type="time" class="form-control" id="shiftEnd" value="17:00" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <input type="text" class="form-control" id="scheduleDept" value="General" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Schedule</button>
+                </form>
+            `);
+        }
+
+        async function handleAddSchedule(event) {
+            event.preventDefault();
+            try {
+                await apiCall('/api/schedules', 'POST', {
+                    staff_id: document.getElementById('scheduleStaffId').value,
+                    date: document.getElementById('scheduleDate').value,
+                    shift_start: document.getElementById('shiftStart').value,
+                    shift_end: document.getElementById('shiftEnd').value,
+                    department: document.getElementById('scheduleDept').value
+                });
+                closeModal();
+                showToast('Schedule added', 'success');
+            } catch (error) {
+                console.error('Failed to add schedule:', error);
+            }
+        }
+
+        async function showViewRosterModal() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const today = new Date().toISOString().split('T')[0];
+            const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const schedules = await apiCall(`/api/schedules/roster?start_date=${today}&end_date=${nextWeek}`);
+            
+            showModal('Staff Roster', `
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Staff</th>
+                                <th>Department</th>
+                                <th>Shift</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${schedules.map(s => `
+                                <tr>
+                                    <td>${new Date(s.date).toLocaleDateString()}</td>
+                                    <td>${s.username}</td>
+                                    <td>${s.department}</td>
+                                    <td>${s.shift_start} - ${s.shift_end}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `, 'modal-lg');
+        }
+
+        // Bed Management
+        async function showNewAdmissionModal() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const [patients, beds, wards] = await Promise.all([
+                apiCall('/api/patients'),
+                apiCall('/api/beds/available'),
+                apiCall('/api/wards/occupancy')
+            ]);
+            
+            showModal('New Admission', `
+                <form onsubmit="handleNewAdmission(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Patient</label>
+                        <select class="form-select" id="admissionPatientId" required>
+                            <option value="">Select Patient</option>
+                            ${patients.map(p => `<option value="${p.id}">${p.first_name} ${p.last_name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Ward</label>
+                            <select class="form-select" id="admissionWardId" required>
+                                <option value="">Select Ward</option>
+                                ${wards.map(w => `<option value="${w.id}">${w.name} (${w.total_beds - w.occupied_beds} available)</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Bed</label>
+                            <select class="form-select" id="admissionBedId" required>
+                                <option value="">Select Bed</option>
+                                ${beds.map(b => `<option value="${b.id}">${b.bed_number}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Admission Type</label>
+                        <select class="form-select" id="admissionType" required>
+                            <option value="emergency">Emergency</option>
+                            <option value="elective">Elective</option>
+                            <option value="transfer">Transfer</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Diagnosis</label>
+                        <textarea class="form-control" id="admissionDiagnosis" rows="2" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Admit Patient</button>
+                </form>
+            `);
+        }
+
+        async function handleNewAdmission(event) {
+            event.preventDefault();
+            try {
+                await apiCall('/api/admissions', 'POST', {
+                    patient_id: document.getElementById('admissionPatientId').value,
+                    bed_id: document.getElementById('admissionBedId').value,
+                    ward_id: document.getElementById('admissionWardId').value,
+                    admission_type: document.getElementById('admissionType').value,
+                    diagnosis: document.getElementById('admissionDiagnosis').value
+                });
+                closeModal();
+                showToast('Patient admitted', 'success');
+            } catch (error) {
+                console.error('Failed to admit patient:', error);
+            }
+        }
+
+        async function showAvailableBedsModal() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const [beds, wards] = await Promise.all([
+                apiCall('/api/beds/available'),
+                apiCall('/api/wards/occupancy')
+            ]);
+            
+            showModal('Available Beds', `
+                <div class="row mb-3">
+                    ${wards.map(w => `
+                        <div class="col-md-6 mb-2">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>${w.name}</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Available: ${w.total_beds - w.occupied_beds}/${w.total_beds}</span>
+                                        <span>${Math.round(w.occupancy_rate || 0)}% occupied</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Bed Number</th>
+                                <th>Ward</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${beds.map(b => `
+                                <tr>
+                                    <td>${b.bed_number}</td>
+                                    <td>${b.ward_name}</td>
+                                    <td>${b.bed_type || 'Standard'}</td>
+                                    <td><span class="badge bg-success">Available</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `, 'modal-lg');
+        }
+
+        // Analytics
+        async function showDashboard() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            const overview = await apiCall('/api/analytics/overview');
+            showModal('Analytics Dashboard', `
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3>${overview.total_patients}</h3>
+                                <p class="text-muted mb-0">Total Patients</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3>${overview.active_admissions}</h3>
+                                <p class="text-muted mb-0">Active Admissions</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3>${overview.available_beds}</h3>
+                                <p class="text-muted mb-0">Available Beds</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3>${overview.pending_invoices}</h3>
+                                <p class="text-muted mb-0">Pending Invoices</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3>$${overview.total_revenue.toFixed(2)}</h3>
+                                <p class="text-muted mb-0">Total Revenue</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3>${overview.low_stock_items}</h3>
+                                <p class="text-muted mb-0">Low Stock Items</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `, 'modal-lg');
+        }
+
+        async function exportReport() {
+            if (!authToken) return showToast('Please login first', 'warning');
+            
+            try {
+                const report = await apiCall('/api/analytics/export', 'POST', {
+                    report_type: 'comprehensive',
+                    format: 'pdf'
+                });
+                showToast(`Report generated: ${report.report_id}`, 'success');
+            } catch (error) {
+                console.error('Failed to export report:', error);
+            }
+        }
+
+        // Utility functions
+        function showModal(title, content, size = '') {
+            const modalHtml = `
+                <div class="modal fade show" id="appModal" tabindex="-1" style="display: block; background: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog ${size}">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">${title}</h5>
+                                <button type="button" class="btn-close" onclick="closeModal()"></button>
+                            </div>
+                            <div class="modal-body">
+                                ${content}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHtml;
+        }
+
+        function closeModal() {
+            document.getElementById('modalContainer').innerHTML = '';
+        }
+
+        function showToast(message, type = 'info') {
+            const toastHtml = `
+                <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+                    <div class="toast show align-items-center text-white bg-${type}" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const temp = document.createElement('div');
+            temp.innerHTML = toastHtml;
+            document.body.appendChild(temp.firstElementChild);
+            setTimeout(() => temp.firstElementChild?.remove(), 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeModules();
+            initWebSocket();
+            if (authToken) {
+                document.getElementById('userInfo').textContent = 'Logged in';
+            }
+        });
+    </script>
+</body>
+</html>

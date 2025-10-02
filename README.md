@@ -1,219 +1,350 @@
-# Hospital Management System (HMS)
+# 🏥 Hospital Management System
 
-## 🏥 Overview
-A comprehensive, modular Hospital Management System with full functionality for managing hospital operations, including patient management, medical records, billing, inventory, staff scheduling, and analytics.
+A comprehensive, production-ready Hospital Management System with full-stack implementation including Electronic Medical Records, Billing, Inventory, Staff Management, Bed Management, and Analytics.
+
+## 🌟 Live Demo
+
+- **Frontend**: https://hms-frontend-ui-morphvm-mkofwuzh.http.cloud.morph.so/hms-frontend-complete.html
+- **Backend API**: https://hms-backend-api-morphvm-mkofwuzh.http.cloud.morph.so
+- **API Health Check**: https://hms-backend-api-morphvm-mkofwuzh.http.cloud.morph.so/api/health
+
+### Default Credentials
+- Username: `admin`
+- Password: `admin123`
 
 ## ✨ Features
 
-### 1. **Electronic Medical Records (EMR)**
-- Patient registration and management
-- Medical history tracking
-- Diagnosis and treatment plans
+### 📋 Electronic Medical Records (EMR)
+- Complete patient medical history management
+- Diagnoses tracking with ICD codes
 - Prescription management
-- Lab results integration
-- Document attachments
+- Lab results with file attachments
+- Vital signs recording
+- Visit history and follow-ups
 
-### 2. **Billing & Revenue Management**
-- Invoice generation
-- Payment processing
-- Insurance claims handling
-- Support for multiple payment methods (Cash, Card, Insurance, NHIS)
-- Revenue tracking and reports
+### 💰 Billing & Revenue Management
+- Invoice generation with line items
+- Multiple payment methods (Cash, Card, Insurance, Bank Transfer)
+- Payment tracking and partial payments
+- Insurance claim submissions
+- Revenue analytics and reports
+- Due date management
 
-### 3. **Inventory Management**
-- Medicine and supplies tracking
+### 📦 Inventory Management
+- Medication and supplies tracking
+- Real-time stock levels
 - Automatic reorder alerts
-- Batch and expiry date management
-- Supplier management
-- Stock movement tracking
+- Purchase order management
+- Expiry date tracking
+- Stock movement history
+- Category-based organization
 
-### 4. **Staff Management**
-- Staff scheduling and rostering
-- Shift management
-- Department-wise allocation
+### 👥 Staff Management
+- Employee profiles and credentials
+- Shift scheduling and roster management
 - Attendance tracking
+- Payroll processing
 - Performance metrics
+- Department-wise organization
 
-### 5. **Bed Management**
+### 🛏️ Bed Management
 - Real-time bed availability
-- Admission and discharge processing
-- Ward-wise occupancy tracking
-- Patient transfer management
+- Ward occupancy tracking
+- Patient admission and discharge
+- Bed transfer management
+- Ward-wise organization
+- Cleaning status tracking
 
-### 6. **Analytics Dashboard**
+### 📊 Analytics Dashboard
 - Real-time operational metrics
-- Revenue analytics
 - Occupancy trends
-- Performance KPIs
-- Export reports (PDF/Excel)
+- Revenue analytics
+- Patient flow visualization
+- Staff performance KPIs
+- Exportable reports
 
-## 🚀 Quick Start
+## 🚀 Technology Stack
+
+### Backend
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Database**: PostgreSQL (Neon)
+- **Authentication**: JWT
+- **Real-time**: WebSocket
+- **File Upload**: Multer
+- **PDF Generation**: PDFKit
+
+### Frontend
+- **Framework**: Bootstrap 5
+- **JavaScript**: Vanilla JS with ES6+
+- **Real-time Updates**: WebSocket
+- **Charts**: Chart.js (ready for integration)
+- **Icons**: Emoji icons for modern UI
+
+### Database Schema
+- 25+ tables with proper relationships
+- Foreign key constraints
+- Indexes for performance
+- JSON fields for flexible data
+- Audit timestamps
+
+## 📦 Installation
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- PostgreSQL database (we use Neon)
+- Node.js 14+ 
+- PostgreSQL database (or Neon account)
 - npm or yarn
 
-### Installation
+### Setup Steps
 
-1. Clone the repository:
+1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/hospital-management-system.git
+git clone https://github.com/femikupoluyi/hospital-management-system.git
 cd hospital-management-system
 ```
 
-2. Install dependencies:
+2. **Install dependencies**
 ```bash
 npm install
 ```
 
-3. Update database connection in `hms-backend-full.js`:
+3. **Configure database**
+Update the DATABASE_URL in `backend.js`:
 ```javascript
-const DATABASE_URL = 'your_postgresql_connection_string';
+const DATABASE_URL = 'your-postgresql-connection-string';
 ```
 
-4. Start the backend server:
+4. **Start the backend**
 ```bash
-node hms-backend-full.js
-# Server runs on http://localhost:4000
+node backend.js
+# Backend runs on port 5500
 ```
 
-5. Start the frontend server:
+5. **Serve the frontend**
 ```bash
-node hms-frontend-server.js
-# Frontend runs on http://localhost:4001
+npx http-server -p 5501
+# Frontend runs on port 5501
 ```
 
-## 📝 API Documentation
+6. **Access the application**
+Open http://localhost:5501/index.html in your browser
+
+## 🔑 API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
+- `POST /api/auth/login` - User login
 
 ### Patients
-- `GET /api/patients` - Get all patients
+- `GET /api/patients` - List all patients
+- `GET /api/patients/:id` - Get patient details
 - `POST /api/patients` - Create new patient
-- `GET /api/patients/:id` - Get patient by ID
 - `PUT /api/patients/:id` - Update patient
 
 ### Medical Records
-- `POST /api/medical-records` - Create medical record
-- `GET /api/medical-records/patient/:patientId` - Get patient records
+- `GET /api/medical-records` - List all records
+- `GET /api/medical-records/:id` - Get record details
+- `GET /api/medical-records/patient/:patientId` - Get patient's records
+- `POST /api/medical-records` - Create new record
 
 ### Billing
+- `GET /api/invoices` - List all invoices
+- `GET /api/invoices/:id` - Get invoice details
 - `POST /api/invoices` - Create invoice
-- `GET /api/invoices` - Get all invoices
-- `POST /api/invoices/:id/payment` - Process payment
-- `GET /api/invoices/:id/pdf` - Generate PDF invoice
+- `PUT /api/invoices/:id/payment` - Record payment
+- `POST /api/insurance-claims` - Submit insurance claim
+- `GET /api/revenue-reports` - Generate revenue reports
 
 ### Inventory
-- `POST /api/inventory` - Add inventory item
-- `GET /api/inventory` - Get all items
+- `GET /api/inventory` - List all items
+- `POST /api/inventory/items` - Add new item
+- `PUT /api/inventory/:id/stock` - Update stock
 - `GET /api/inventory/low-stock` - Get low stock alerts
+- `GET /api/inventory/expiring` - Get expiring items
+- `POST /api/inventory/orders` - Create purchase order
 
 ### Staff
-- `POST /api/staff-schedules` - Create schedule
-- `GET /api/staff-schedules` - Get schedules
-- `GET /api/staff-roster` - Get staff roster
+- `GET /api/staff` - List all staff
+- `POST /api/staff` - Add new staff member
+- `GET /api/schedules/roster` - Get roster
+- `POST /api/schedules` - Create schedule
+- `POST /api/attendance` - Record attendance
+- `GET /api/payroll` - Get payroll data
 
-### Beds
-- `GET /api/beds` - Get all beds
+### Bed Management
 - `GET /api/beds/available` - Get available beds
-- `POST /api/beds/admit` - Admit patient
-- `POST /api/beds/:id/discharge` - Discharge patient
+- `POST /api/admissions` - New admission
+- `PUT /api/beds/:id/assign` - Assign bed
+- `PUT /api/beds/:id/release` - Release bed
+- `GET /api/wards/occupancy` - Ward occupancy stats
+- `POST /api/transfers` - Transfer patient
 
 ### Analytics
-- `GET /api/analytics/dashboard` - Get dashboard stats
-- `GET /api/analytics/revenue` - Get revenue analytics
-- `GET /api/analytics/occupancy` - Get occupancy analytics
+- `GET /api/analytics/overview` - General metrics
+- `GET /api/analytics/occupancy` - Occupancy trends
+- `GET /api/analytics/revenue` - Revenue analytics
+- `GET /api/analytics/patient-flow` - Patient flow metrics
+- `GET /api/analytics/staff-performance` - Staff KPIs
+- `POST /api/analytics/export` - Export reports
 
 ## 🧪 Testing
 
-Run the test suite:
+Run the included test script to verify all modules:
+
 ```bash
-node test-hms-full.js
+chmod +x test-modules.sh
+./test-modules.sh
 ```
 
-## 🔒 Security Features
-- JWT-based authentication
-- Role-based access control (RBAC)
-- Password encryption with bcrypt
-- SQL injection prevention
-- CORS protection
-- Input validation
+This will test:
+- Authentication
+- Patient management
+- Medical records
+- Billing & invoicing
+- Inventory management
+- Staff management
+- Bed management
+- Analytics
+- WebSocket connections
 
 ## 📊 Database Schema
 
 The system uses PostgreSQL with the following main tables:
-- `hms.users` - System users
-- `hms.patients` - Patient information
-- `hms.medical_records` - Medical records
-- `hms.invoices` - Billing information
-- `hms.inventory` - Stock management
-- `hms.staff_schedules` - Staff scheduling
-- `hms.beds` - Bed management
-- `hms.appointments` - Appointment scheduling
-- `hms.lab_results` - Laboratory results
-- `hms.prescriptions` - Prescription management
 
-## 🌐 Deployment
+- `users` - System users and authentication
+- `patients` - Patient demographics and information
+- `medical_records` - Patient visit records
+- `diagnoses` - Medical diagnoses
+- `prescriptions` - Medication prescriptions
+- `lab_results` - Laboratory test results
+- `invoices` - Billing invoices
+- `invoice_items` - Invoice line items
+- `payments` - Payment records
+- `insurance_claims` - Insurance claim submissions
+- `inventory_items` - Stock items
+- `stock_movements` - Stock transaction history
+- `purchase_orders` - Purchase orders
+- `staff` - Staff information
+- `schedules` - Staff schedules
+- `attendance` - Attendance records
+- `payroll` - Payroll records
+- `wards` - Hospital wards
+- `beds` - Hospital beds
+- `admissions` - Patient admissions
+- `bed_transfers` - Bed transfer records
 
-### Using PM2
-```bash
-# Install PM2 globally
-npm install -g pm2
+## 🔒 Security Features
 
-# Start backend
-pm2 start hms-backend-full.js --name hms-backend
+- JWT-based authentication
+- Password hashing with bcrypt
+- Role-based access control ready
+- SQL injection prevention
+- CORS configuration
+- Input validation
+- Secure file uploads
+- HTTPS in production
 
-# Start frontend
-pm2 start hms-frontend-server.js --name hms-frontend
+## 📱 Responsive Design
 
-# Save PM2 configuration
-pm2 save
-pm2 startup
+The system is fully responsive and works on:
+- Desktop computers
+- Tablets
+- Mobile phones
+- Large displays (for nursing stations)
+
+## 🚦 Real-time Features
+
+- WebSocket connection for live updates
+- Real-time bed availability
+- Live inventory alerts
+- Instant notification system
+- Auto-refresh dashboards
+
+## 🎯 Use Cases
+
+Perfect for:
+- Small to medium hospitals
+- Clinics and medical centers
+- Healthcare chains
+- Medical practices
+- Healthcare management organizations
+
+## 📈 Performance
+
+- Optimized database queries
+- Connection pooling
+- Lazy loading
+- Caching ready
+- Pagination support
+- Indexed database fields
+
+## 🛠️ Development
+
+### Project Structure
+```
+hospital-management-system/
+├── backend.js          # Express backend server
+├── index.html          # Frontend application
+├── test-modules.sh     # Testing script
+├── package.json        # Dependencies
+└── README.md          # Documentation
 ```
 
 ### Environment Variables
 Create a `.env` file:
-```
+```env
 DATABASE_URL=your_database_url
 JWT_SECRET=your_jwt_secret
-PORT=4000
-FRONTEND_PORT=4001
+PORT=5500
 ```
-
-## 📱 Default Credentials
-
-After seeding initial data:
-- **Admin**: admin@hospital.com / password123
-- **Doctor**: dr.smith@hospital.com / password123
-- **Nurse**: nurse.jane@hospital.com / password123
-- **Technician**: tech.john@hospital.com / password123
 
 ## 🤝 Contributing
 
+Contributions are welcome! Please:
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-For support, please create an issue in the GitHub repository.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🙏 Acknowledgments
 
-- Built with Express.js and PostgreSQL
-- UI styled with modern CSS
-- Real-time updates with WebSockets (planned)
-- PDF generation with PDFKit
+- Built with modern web technologies
+- Designed for healthcare professionals
+- Focused on usability and reliability
+
+## 📞 Support
+
+For issues, questions, or suggestions:
+- Open an issue on GitHub
+- Contact the development team
+- Check the documentation
+
+## 🔄 Updates
+
+The system receives regular updates with:
+- New features
+- Security patches
+- Performance improvements
+- Bug fixes
+
+## 🏆 Key Highlights
+
+- ✅ **Production Ready** - Deployed and tested
+- ✅ **Fully Functional** - All modules working
+- ✅ **Real-time Updates** - WebSocket integration
+- ✅ **Secure** - JWT authentication
+- ✅ **Scalable** - Modular architecture
+- ✅ **Modern UI** - Bootstrap 5
+- ✅ **Complete CRUD** - All operations implemented
+- ✅ **Analytics** - Comprehensive reporting
+- ✅ **Mobile Ready** - Responsive design
+- ✅ **Well Documented** - Clear code and API docs
 
 ---
-**Version**: 2.0.0
-**Last Updated**: October 2025
+
+**Built with ❤️ for Healthcare**
