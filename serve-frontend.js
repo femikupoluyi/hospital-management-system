@@ -16,7 +16,7 @@ app.use('/api', createProxyMiddleware({
 
 // Serve the main HTML file
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'comprehensive-frontend.html'));
 });
 
 app.listen(PORT, () => {

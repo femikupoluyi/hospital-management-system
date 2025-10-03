@@ -1,0 +1,117 @@
+{
+  "timestamp": "2025-10-03T20:53:58.853Z",
+  "summary": {
+    "total": 23,
+    "passed": 8,
+    "failed": 15
+  },
+  "results": [
+    {
+      "name": "Register New User",
+      "status": "PASSED"
+    },
+    {
+      "name": "User Login",
+      "status": "PASSED"
+    },
+    {
+      "name": "Register Patient",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Get All Patients",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Search Patients",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Add Inventory Item",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Get All Inventory",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Get Low Stock Items",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Get All Staff",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Add Staff Schedule",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Get Staff Schedules",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Mark Attendance",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Get Bed Statistics",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Get Available Beds",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Admit Patient",
+      "status": "PASSED"
+    },
+    {
+      "name": "Get Dashboard Metrics",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Generate Summary Report",
+      "status": "PASSED"
+    },
+    {
+      "name": "Generate Financial Report",
+      "status": "PASSED"
+    },
+    {
+      "name": "Generate Operational Report",
+      "status": "PASSED"
+    },
+    {
+      "name": "Submit Hospital Application",
+      "status": "PASSED"
+    },
+    {
+      "name": "Get All Applications",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Health Check",
+      "status": "PASSED"
+    },
+    {
+      "name": "System Status",
+      "status": "FAILED",
+      "error": "Request failed with status code 500"
+    }
+  ]
+}
